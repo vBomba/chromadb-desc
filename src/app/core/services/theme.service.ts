@@ -1,6 +1,6 @@
 import { Injectable, signal, computed } from '@angular/core';
 
-const STORAGE_KEY = 'chroma-admin-theme';
+const STORAGE_KEY = 'chromaDesc-theme';
 export type ThemeMode = 'light' | 'dark';
 
 @Injectable({ providedIn: 'root' })

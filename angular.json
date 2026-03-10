@@ -6,7 +6,7 @@
   },
   "newProjectRoot": "projects",
   "projects": {
-    "chroma-admin": {
+    "chromaDesc": {
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
@@ -83,10 +83,10 @@
           "builder": "@angular/build:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "chroma-admin:build:production"
+              "buildTarget": "chromaDesc:build:production"
             },
             "development": {
-              "buildTarget": "chroma-admin:build:development"
+              "buildTarget": "chromaDesc:build:development"
             }
           },
           "defaultConfiguration": "development"

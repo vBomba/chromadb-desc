@@ -1,4 +1,4 @@
-# Chroma Admin
+# Chroma Desc
 
 Angular 21 admin UI for ChromaDB using the REST API. Standalone components and Angular Material.
 
