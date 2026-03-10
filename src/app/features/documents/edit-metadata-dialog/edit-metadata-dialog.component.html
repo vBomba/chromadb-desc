@@ -1,0 +1,14 @@
+<h2 mat-dialog-title>Edit metadata</h2>
+<mat-dialog-content>
+  <p class="id-line"><strong>ID:</strong> <code>{{ row.id }}</code></p>
+  <mat-form-field appearance="outline" class="full-width">
+    <mat-label>Metadata (JSON)</mat-label>
+    <textarea matInput [formControl]="metadataControl" rows="8"></textarea>
+  </mat-form-field>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button (click)="cancel()">Cancel</button>
+  <button mat-flat-button color="primary" (click)="submit()" [disabled]="submitting">
+    Save
+  </button>
+</mat-dialog-actions>

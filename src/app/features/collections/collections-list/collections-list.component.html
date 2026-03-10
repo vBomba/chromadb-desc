@@ -1,0 +1,48 @@
+<mat-card>
+  <mat-card-header>
+    <mat-card-title>Collections</mat-card-title>
+    <mat-card-subtitle>List of ChromaDB collections (up to 500)</mat-card-subtitle>
+    <button mat-flat-button color="primary" mat-card-avatar (click)="openCreateDialog()">
+      <mat-icon>add</mat-icon>
+    </button>
+  </mat-card-header>
+  <mat-card-content>
+    @if (loading()) {
+      <div class="loading">
+        <mat-spinner diameter="32"></mat-spinner>
+        <span>Loading collections…</span>
+      </div>
+    } @else {
+      <table mat-table [dataSource]="dataSource" class="collections-table">
+        <ng-container matColumnDef="name">
+          <th mat-header-cell *matHeaderCellDef>Name</th>
+          <td mat-cell *matCellDef="let row">{{ row.name }}</td>
+        </ng-container>
+        <ng-container matColumnDef="id">
+          <th mat-header-cell *matHeaderCellDef>ID</th>
+          <td mat-cell *matCellDef="let row"><code class="id-cell">{{ row.id }}</code></td>
+        </ng-container>
+        <ng-container matColumnDef="dimension">
+          <th mat-header-cell *matHeaderCellDef>Dimension</th>
+          <td mat-cell *matCellDef="let row">{{ row.dimension ?? '—' }}</td>
+        </ng-container>
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef>Actions</th>
+          <td mat-cell *matCellDef="let row">
+            <button mat-icon-button (click)="openCollection(row)" aria-label="Open collection">
+              <mat-icon>open_in_new</mat-icon>
+            </button>
+            <button mat-icon-button (click)="openDeleteDialog(row)" aria-label="Delete collection" color="warn">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </td>
+        </ng-container>
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+        <tr class="mat-row" *matNoDataRow>
+          <td class="mat-cell" [attr.colspan]="displayedColumns.length">No collections found.</td>
+        </tr>
+      </table>
+    }
+  </mat-card-content>
+</mat-card>

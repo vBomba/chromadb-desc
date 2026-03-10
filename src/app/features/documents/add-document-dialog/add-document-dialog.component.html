@@ -1,0 +1,27 @@
+<h2 mat-dialog-title>Add document</h2>
+<mat-dialog-content>
+  <mat-form-field appearance="outline" class="full-width">
+    <mat-label>ID</mat-label>
+    <input matInput [formControl]="idControl" placeholder="doc_1" />
+    @if (idControl.hasError('required') && idControl.touched) {
+      <mat-error>ID is required</mat-error>
+    }
+  </mat-form-field>
+  <mat-form-field appearance="outline" class="full-width">
+    <mat-label>Document text</mat-label>
+    <textarea matInput [formControl]="documentControl" rows="4" placeholder="Content..."></textarea>
+  </mat-form-field>
+  <mat-form-field appearance="outline" class="full-width">
+    <mat-label>Metadata (JSON)</mat-label>
+    <textarea matInput [formControl]="metadataControl" rows="3" placeholder='{"key": "value"}'></textarea>
+  </mat-form-field>
+  @if (data.dimension == null) {
+    <p class="hint">Embedding dimension is unknown; using {{ dimension }}. Ensure your backend can index this.</p>
+  }
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button (click)="cancel()">Cancel</button>
+  <button mat-flat-button color="primary" (click)="submit()" [disabled]="idControl.invalid || submitting">
+    Add
+  </button>
+</mat-dialog-actions>

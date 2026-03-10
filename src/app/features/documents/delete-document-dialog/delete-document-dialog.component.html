@@ -1,0 +1,14 @@
+<h2 mat-dialog-title>Delete document</h2>
+<mat-dialog-content>
+  <p>Are you sure you want to delete this document? This action cannot be undone.</p>
+  <p class="id-line"><code>{{ row.id }}</code></p>
+  @if (row.document) {
+    <p class="preview">{{ row.document.length > 100 ? row.document.slice(0, 100) + '…' : row.document }}</p>
+  }
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button (click)="cancel()">Cancel</button>
+  <button mat-flat-button color="warn" (click)="confirm()" [disabled]="deleting">
+    Delete
+  </button>
+</mat-dialog-actions>

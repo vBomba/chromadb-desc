@@ -1,0 +1,26 @@
+mat-card-header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+
+  button[mat-card-avatar] {
+    margin-left: auto;
+  }
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 0;
+}
+
+.collections-table {
+  width: 100%;
+
+  .id-cell {
+    font-size: 0.85em;
+    word-break: break-all;
+  }
+}

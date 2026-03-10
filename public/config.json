@@ -1,0 +1,6 @@
+{
+  "apiBaseUrl": "https://mock-url/api/v2",
+  "tenant": "default-tenant",
+  "database": "default_database",
+  "apiKey": null
+}

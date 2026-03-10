@@ -1,0 +1,48 @@
+mat-card-header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+
+  .back-link {
+    margin-right: 0.25rem;
+  }
+
+  button[mat-card-avatar] {
+    margin-left: auto;
+  }
+}
+
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+
+  .search-field {
+    flex: 1;
+    min-width: 200px;
+  }
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 0;
+}
+
+.documents-table {
+  width: 100%;
+
+  .id-cell {
+    font-size: 0.85em;
+    word-break: break-all;
+  }
+
+  .meta-cell {
+    font-size: 0.9em;
+    max-width: 200px;
+  }
+}

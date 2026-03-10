@@ -1,0 +1,17 @@
+.connection-card {
+  max-width: 480px;
+}
+
+.status-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  &.success mat-icon {
+    color: var(--mat-sys-primary, green);
+  }
+
+  &.error mat-icon {
+    color: var(--mat-sys-error, red);
+  }
+}

@@ -1,0 +1,44 @@
+.dashboard-container {
+  height: 100vh;
+}
+
+.dashboard-sidenav {
+  width: 240px;
+  max-width: 85vw;
+}
+
+.sidenav-toolbar {
+  min-height: 56px;
+  font-weight: 500;
+}
+
+.dashboard-content {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.main-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.toolbar-spacer {
+  flex: 1;
+}
+
+.main-content {
+  flex: 1;
+  padding: 1rem;
+  box-sizing: border-box;
+}
+
+:host ::ng-deep .active {
+  font-weight: 500;
+  background-color: var(--mat-sys-surface-container-high, rgba(0, 0, 0, 0.08));
+}
+
+[data-theme='dark'] :host ::ng-deep .active {
+  background-color: var(--mat-sys-surface-container-high, rgba(255, 255, 255, 0.08));
+}
