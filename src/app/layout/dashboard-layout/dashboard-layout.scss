@@ -42,3 +42,31 @@
 [data-theme='dark'] :host ::ng-deep .active {
   background-color: var(--mat-sys-surface-container-high, rgba(255, 255, 255, 0.08));
 }
+
+.heartbeat-indicator {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 0.25rem;
+
+  .heartbeat-spinner {
+    display: block;
+  }
+
+  .status-icon {
+    font-size: 10px;
+    width: 10px;
+    height: 10px;
+
+    &.connected {
+      color: var(--mat-sys-primary, #1976d2);
+    }
+
+    &.disconnected {
+      color: var(--mat-sys-error, #d32f2f);
+    }
+
+    &.idle {
+      color: var(--mat-sys-outline, #757575);
+    }
+  }
+}

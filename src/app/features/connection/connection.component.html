@@ -1,12 +1,12 @@
 <mat-card class="connection-card">
   <mat-card-header>
     <mat-card-title>ChromaDB connection</mat-card-title>
-    <mat-card-subtitle>Verify that the API is reachable with the current configuration</mat-card-subtitle>
+    <mat-card-subtitle>Verify that the API is reachable. Heartbeat runs periodically in the background.</mat-card-subtitle>
   </mat-card-header>
   <mat-card-content>
-    @switch (status()) {
+    @switch (heartbeat.status()) {
       @case ('idle') {
-        <p>Click the button below to check the connection using the configured API URL, tenant, and database.</p>
+        <p>Click the button below to check the connection. A heartbeat runs every 30 seconds (configurable in <code>config.json</code> as <code>heartbeatIntervalMs</code>).</p>
       }
       @case ('checking') {
         <div class="status-row">
@@ -14,22 +14,28 @@
           <span>Checking connection…</span>
         </div>
       }
-      @case ('ok') {
+      @case ('connected') {
         <div class="status-row success">
           <mat-icon>check_circle</mat-icon>
           <span>Connection successful.</span>
+          @if (heartbeat.lastCheckAt()) {
+            <span class="last-check">Last check: {{ heartbeat.lastCheckAt() | date:'shortTime' }}</span>
+          }
         </div>
       }
-      @case ('error') {
+      @case ('disconnected') {
         <div class="status-row error">
           <mat-icon>error</mat-icon>
-          <span>{{ errorMessage() }}</span>
+          <span>{{ heartbeat.lastError() }}</span>
+          @if (heartbeat.lastCheckAt()) {
+            <span class="last-check">Last check: {{ heartbeat.lastCheckAt() | date:'shortTime' }}</span>
+          }
         </div>
       }
     }
   </mat-card-content>
   <mat-card-actions>
-    <button mat-flat-button color="primary" (click)="checkConnection()" [disabled]="status() === 'checking'">
+    <button mat-flat-button color="primary" (click)="checkConnection()" [disabled]="heartbeat.status() === 'checking'">
       Check connection
     </button>
   </mat-card-actions>

@@ -25,6 +25,7 @@ export class ConfigService {
       tenant: c.tenant ?? '',
       database: c.database ?? '',
       apiKey,
+      heartbeatIntervalMs: c.heartbeatIntervalMs ?? 30000,
     };
     return this.config;
   }

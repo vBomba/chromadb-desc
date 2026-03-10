@@ -30,6 +30,22 @@
       </button>
     }
       <span class="toolbar-spacer"></span>
+      <span class="heartbeat-indicator" [matTooltip]="heartbeatTooltip()">
+        @switch (heartbeat.status()) {
+          @case ('checking') {
+            <mat-spinner diameter="20" class="heartbeat-spinner"></mat-spinner>
+          }
+          @case ('connected') {
+            <mat-icon class="status-icon connected" aria-hidden="true">fiber_manual_record</mat-icon>
+          }
+          @case ('disconnected') {
+            <mat-icon class="status-icon disconnected" aria-hidden="true">fiber_manual_record</mat-icon>
+          }
+          @case ('idle') {
+            <mat-icon class="status-icon idle" aria-hidden="true">fiber_manual_record</mat-icon>
+          }
+        }
+      </span>
       <button
         mat-icon-button
         type="button"
