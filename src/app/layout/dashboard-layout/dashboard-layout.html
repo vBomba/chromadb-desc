@@ -11,6 +11,10 @@
         <mat-icon matListItemIcon>link</mat-icon>
         <span matListItemTitle>Connection</span>
       </a>
+      <a mat-list-item routerLink="/configuration" routerLinkActive="active" (click)="isHandset() && drawer.close()">
+        <mat-icon matListItemIcon>settings</mat-icon>
+        <span matListItemTitle>Configuration</span>
+      </a>
       <a mat-list-item routerLink="/collections" routerLinkActive="active" (click)="isHandset() && drawer.close()">
         <mat-icon matListItemIcon>folder</mat-icon>
         <span matListItemTitle>Collections</span>

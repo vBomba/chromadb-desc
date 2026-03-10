@@ -1,0 +1,29 @@
+.config-card {
+  max-width: 560px;
+}
+
+.config-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.stored-badge {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.15rem 0.5rem;
+  font-size: 0.75rem;
+  background: var(--mat-sys-primary-container, #e3f2fd);
+  color: var(--mat-sys-on-primary-container, #01579b);
+  border-radius: 4px;
+}
+
+mat-card-subtitle {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}

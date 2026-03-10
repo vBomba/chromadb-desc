@@ -17,6 +17,11 @@ export const routes: Routes = [
           import('./features/connection/connection.component').then((m) => m.ConnectionComponent),
       },
       {
+        path: 'configuration',
+        loadComponent: () =>
+          import('./features/configuration/configuration.component').then((m) => m.ConfigurationComponent),
+      },
+      {
         path: 'collections',
         loadComponent: () =>
           import('./features/collections/collections-list/collections-list.component').then(

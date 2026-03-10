@@ -1,0 +1,67 @@
+<mat-card class="config-card">
+  <mat-card-header>
+    <mat-card-title>ChromaDB configuration</mat-card-title>
+    <mat-card-subtitle>
+      Parameters used for API requests. Saved configuration is stored in the browser (localStorage) and overrides config.json.
+      @if (hasStoredConfig) {
+        <span class="stored-badge">Using saved config</span>
+      }
+    </mat-card-subtitle>
+  </mat-card-header>
+  <mat-card-content>
+    @if (loading) {
+      <p>Loading…</p>
+    } @else {
+      <form [formGroup]="form" class="config-form">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>API base URL</mat-label>
+          <input matInput formControlName="apiBaseUrl" placeholder="https://example.com/api/v2" />
+          <mat-hint>Include /api/v2, no trailing slash</mat-hint>
+          @if (form.controls.apiBaseUrl.hasError('required') && form.controls.apiBaseUrl.touched) {
+            <mat-error>Required</mat-error>
+          }
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Tenant</mat-label>
+          <input matInput formControlName="tenant" placeholder="default-tenant" />
+          @if (form.controls.tenant.hasError('required') && form.controls.tenant.touched) {
+            <mat-error>Required</mat-error>
+          }
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Database</mat-label>
+          <input matInput formControlName="database" placeholder="default_database" />
+          @if (form.controls.database.hasError('required') && form.controls.database.touched) {
+            <mat-error>Required</mat-error>
+          }
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>API key (optional)</mat-label>
+          <input matInput formControlName="apiKey" type="password" placeholder="x-chroma-token" />
+          <mat-hint>Sent as x-chroma-token header when set</mat-hint>
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Heartbeat interval (ms)</mat-label>
+          <input matInput formControlName="heartbeatIntervalMs" type="number" min="5000" max="300000" />
+          <mat-hint>5000–300000 (default 30000)</mat-hint>
+          @if (form.controls.heartbeatIntervalMs.hasError('min') || form.controls.heartbeatIntervalMs.hasError('max')) {
+            <mat-error>Between 5000 and 300000</mat-error>
+          }
+        </mat-form-field>
+      </form>
+    }
+  </mat-card-content>
+  <mat-card-actions>
+    <button mat-flat-button color="primary" (click)="save()" [disabled]="form.invalid || saving || loading">
+      Save (store in browser)
+    </button>
+    <button mat-button (click)="exportFile()" [disabled]="form.invalid || loading">
+      Export config.json
+    </button>
+    @if (hasStoredConfig) {
+      <button mat-button (click)="resetToFile()" [disabled]="loading">
+        Reset to config.json
+      </button>
+    }
+  </mat-card-actions>
+</mat-card>
