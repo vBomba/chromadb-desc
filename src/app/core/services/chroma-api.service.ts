@@ -92,6 +92,10 @@ export interface ChromaDatabase {
   tenant: string;
 }
 
+export interface CollectionCount {
+  count: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ChromaApiService {
   private http = inject(HttpClient);
@@ -134,6 +138,20 @@ export class ChromaApiService {
         const headers = await this.headers();
         const url = `${c.apiBaseUrl}/tenants/${encodeURIComponent(c.tenant)}/databases/${encodeURIComponent(c.database)}`;
         return this.http.get<ChromaDatabase>(url, { headers });
+      }),
+      switchMap((obs) => obs)
+    );
+  }
+
+  /** Number of records in a collection. */
+  countRecords(collectionId: string): Observable<CollectionCount> {
+    return from(this.baseUrl()).pipe(
+      switchMap(async (base) => {
+        const headers = await this.headers();
+        return this.http.get<CollectionCount>(
+          `${base}/collections/${encodeURIComponent(collectionId)}/count`,
+          { headers }
+        );
       }),
       switchMap((obs) => obs)
     );

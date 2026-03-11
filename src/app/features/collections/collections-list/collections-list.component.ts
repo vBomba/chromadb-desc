@@ -5,6 +5,9 @@ import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTableModule, MatTableDataSource } from '@angular/material/table';
+import { MatSortModule } from '@angular/material/sort';
+import { ViewChild } from '@angular/core';
+import { MatSort } from '@angular/material/sort';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -27,6 +30,7 @@ import { MatDialog } from '@angular/material/dialog';
     MatSnackBarModule,
     MatFormFieldModule,
     MatInputModule,
+    MatSortModule,
   ],
   templateUrl: './collections-list.component.html',
   styleUrl: './collections-list.component.scss',
@@ -39,13 +43,16 @@ export class CollectionsListComponent implements OnInit {
 
   protected loading = signal(true);
   protected dataSource = new MatTableDataSource<ChromaCollection>([]);
-  protected readonly displayedColumns = ['name', 'id', 'dimension', 'actions'];
+  protected readonly displayedColumns = ['name', 'id', 'dimension', 'count', 'actions'];
 
   protected filterTenant = '';
   protected filterDatabase = '';
   protected filterText = '';
   private lastLoaded: ChromaCollection[] = [];
   private filterDebounceHandle: number | null = null;
+  protected counts = new Map<string, number>();
+
+  @ViewChild(MatSort, { static: true }) sort!: MatSort;
 
   ngOnInit(): void {
     this.dataSource.filterPredicate = (data: ChromaCollection, raw: string): boolean => {
@@ -69,6 +76,7 @@ export class CollectionsListComponent implements OnInit {
       return tenantOk && databaseOk && textOk;
     };
 
+    this.dataSource.sort = this.sort;
     this.load();
   }
 
@@ -80,12 +88,32 @@ export class CollectionsListComponent implements OnInit {
         this.dataSource.data = list;
         this.applyFilters();
         this.loading.set(false);
+        this.loadCountsForCollections(list);
       },
       error: () => {
         this.loading.set(false);
         this.snackBar.open('Failed to load collections', 'Close', { duration: 5000 });
       },
     });
+  }
+
+  private loadCountsForCollections(list: ChromaCollection[]): void {
+    this.counts.clear();
+    for (const c of list) {
+      this.chroma.countRecords(c.id).subscribe({
+        next: (res) => {
+          this.counts.set(c.id, res.count ?? 0);
+        },
+        error: () => {
+          // Ignore count errors for now.
+        },
+      });
+    }
+  }
+
+  protected getCountFor(row: ChromaCollection): number | string {
+    const v = this.counts.get(row.id);
+    return typeof v === 'number' ? v : '…';
   }
 
   protected openCollection(c: ChromaCollection): void {

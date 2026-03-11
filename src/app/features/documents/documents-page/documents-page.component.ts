@@ -15,6 +15,8 @@ import { EditMetadataDialogComponent } from '../edit-metadata-dialog/edit-metada
 import { DeleteDocumentDialogComponent } from '../delete-document-dialog/delete-document-dialog.component';
 import { MatDialog } from '@angular/material/dialog';
 import { DocumentRow } from '../document-row.model';
+import { SelectionModel } from '@angular/cdk/collections';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 
 const PAGE_SIZE = 25;
 
@@ -32,6 +34,7 @@ const PAGE_SIZE = 25;
     MatSnackBarModule,
     MatFormFieldModule,
     MatInputModule,
+    MatCheckboxModule,
   ],
   templateUrl: './documents-page.component.html',
   styleUrl: './documents-page.component.scss',
@@ -48,12 +51,15 @@ export class DocumentsPageComponent implements OnInit {
   protected loading = signal(true);
   protected totalEstimate = signal<number>(0);
   protected dataSource = new MatTableDataSource<DocumentRow>([]);
-  protected readonly displayedColumns = ['id', 'document', 'metadata', 'actions'];
+  protected selection = new SelectionModel<DocumentRow>(true, []);
+  protected readonly displayedColumns = ['select', 'id', 'document', 'metadata', 'embedding', 'actions'];
 
   protected pageIndex = signal(0);
   protected pageSize = PAGE_SIZE;
   protected searchQuery = signal('');
   protected searchMode = signal<'list' | 'search'>('list');
+  protected metadataKey = signal('');
+  protected metadataValue = signal('');
 
   protected paginatorLength = computed(() => {
     const total = this.totalEstimate();
@@ -87,9 +93,10 @@ export class DocumentsPageComponent implements OnInit {
     this.loading.set(true);
     const limit = this.pageSize;
     const offset = pageIndex * limit;
+    const where = this.buildWhere();
     this.chroma
       .getRecords(cid, {
-        where: {},
+        where,
         include: ['documents', 'metadatas', 'embeddings'],
         limit,
         offset,
@@ -108,17 +115,23 @@ export class DocumentsPageComponent implements OnInit {
     const docs = res.documents ?? [];
     const metas = res.metadatas ?? [];
     const embs = res.embeddings ?? [];
-    const rows: DocumentRow[] = ids.map((id, i) => ({
-      id,
-      document: docs[i] ?? null,
-      metadata: metas[i] ?? null,
-      embeddingPreview: (() => {
-        const v = embs[i];
-        if (!v || !Array.isArray(v)) return null;
+    const rows: DocumentRow[] = ids.map((id, i) => {
+      const v = embs[i];
+      let preview: string | null = null;
+      if (v && Array.isArray(v)) {
         const first = Array.isArray(v[0]) ? (v[0] as number[]) : (v as unknown as number[]);
-        return first.length ? `[${first.slice(0, 3).join(', ')}…]` : null;
-      })(),
-    }));
+        if (first.length) {
+          const norm = Math.sqrt(first.reduce((sum, x) => sum + x * x, 0));
+          preview = `[${first.slice(0, 3).map((x) => x.toFixed(3)).join(', ')}…] ‖v‖≈${norm.toFixed(2)}`;
+        }
+      }
+    return {
+        id,
+        document: docs[i] ?? null,
+        metadata: metas[i] ?? null,
+        embeddingPreview: preview,
+      };
+    });
     this.dataSource.data = rows;
     this.totalEstimate.set(pageIndex * this.pageSize + rows.length + (rows.length < this.pageSize ? 0 : 1));
     this.loading.set(false);
@@ -145,11 +158,11 @@ export class DocumentsPageComponent implements OnInit {
           const docs = res.documents?.[0] ?? [];
           const metas = res.metadatas?.[0] ?? [];
           const rows: DocumentRow[] = ids.map((id, i) => ({
-            id,
-            document: docs[i] ?? null,
-            metadata: metas[i] ?? null,
-            embeddingPreview: null,
-          }));
+              id,
+              document: docs[i] ?? null,
+              metadata: metas[i] ?? null,
+              embeddingPreview: null,
+            }));
           this.dataSource.data = rows;
           this.loading.set(false);
         },
@@ -165,6 +178,58 @@ export class DocumentsPageComponent implements OnInit {
     this.searchMode.set('list');
     this.pageIndex.set(0);
     this.loadPage(0);
+  }
+
+  protected toggleAll(): void {
+    if (this.isAllSelected()) {
+      this.selection.clear();
+    } else {
+      this.selection.select(...this.dataSource.data);
+    }
+  }
+
+  protected isAllSelected(): boolean {
+    return this.selection.selected.length === this.dataSource.data.length && this.dataSource.data.length > 0;
+  }
+
+  protected toggleRow(row: DocumentRow): void {
+    this.selection.toggle(row);
+  }
+
+  protected bulkDelete(): void {
+    const cid = this.collectionId();
+    if (!cid) return;
+    const ids = this.selection.selected.map((r) => r.id);
+    if (!ids.length) return;
+    this.loading.set(true);
+    this.chroma.deleteRecords(cid, { ids }).subscribe({
+      next: () => {
+        this.snackBar.open(`Deleted ${ids.length} documents`, 'Close', { duration: 4000 });
+        this.selection.clear();
+        this.loadPage(this.pageIndex());
+      },
+      error: () => {
+        this.loading.set(false);
+        this.snackBar.open('Bulk delete failed', 'Close', { duration: 5000 });
+      },
+    });
+  }
+
+  protected applyMetadataFilter(): void {
+    this.pageIndex.set(0);
+    this.loadPage(0);
+  }
+
+  private buildWhere(): unknown {
+    const key = this.metadataKey().trim();
+    const value = this.metadataValue().trim();
+    if (!key || !value) return {};
+    try {
+      const parsed = JSON.parse(value);
+      return { [key]: parsed };
+    } catch {
+      return { [key]: value };
+    }
   }
 
   protected openAddDialog(): void {
