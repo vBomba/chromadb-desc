@@ -24,7 +24,7 @@ export class ConnectionHeartbeatService implements OnDestroy {
         .pipe(
           switchMap(() => {
             this.status.set('checking');
-            return this.chroma.checkConnection().pipe(
+            return this.chroma.heartbeat().pipe(
               catchError((err) => {
                 const msg =
                   err?.error?.message ??
@@ -53,7 +53,7 @@ export class ConnectionHeartbeatService implements OnDestroy {
   /** Run a single check now (without waiting for interval). */
   runCheck(): void {
     this.status.set('checking');
-    this.chroma.checkConnection().subscribe({
+    this.chroma.heartbeat().subscribe({
       next: () => {
         this.lastError.set(null);
         this.status.set('connected');

@@ -22,3 +22,20 @@
     margin-left: 0.25rem;
   }
 }
+
+.database-section {
+  margin-top: 1rem;
+
+  h3 {
+    margin: 0 0 0.5rem;
+    font-size: 1rem;
+    font-weight: 500;
+  }
+
+  .db-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    font-size: 0.9rem;
+  }
+}

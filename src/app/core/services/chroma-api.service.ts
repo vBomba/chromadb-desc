@@ -82,10 +82,25 @@ export interface ApiError {
   message: string;
 }
 
+export interface HeartbeatResponse {
+  'nanosecond heartbeat': number;
+}
+
+export interface ChromaDatabase {
+  id: string;
+  name: string;
+  tenant: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ChromaApiService {
   private http = inject(HttpClient);
   private configService = inject(ConfigService);
+
+  private async apiRoot(): Promise<string> {
+    const c = await this.configService.loadConfig();
+    return c.apiBaseUrl;
+  }
 
   private async baseUrl(): Promise<string> {
     const c = await this.configService.loadConfig();
@@ -101,16 +116,24 @@ export class ChromaApiService {
     return h;
   }
 
-  /** Check connection by listing collections with limit 1 */
-  checkConnection(): Observable<ChromaCollection[]> {
-    return from(this.baseUrl()).pipe(
-      switchMap(async (base) => {
+  /** Heartbeat for connection check: GET /api/v2/heartbeat */
+  heartbeat(): Observable<HeartbeatResponse> {
+    return from(this.apiRoot()).pipe(
+      switchMap(async (root) => {
         const headers = await this.headers();
-        const params = new HttpParams().set('limit', '1').set('offset', '0');
-        return this.http.get<ChromaCollection[]>(
-          `${base}/collections`,
-          { headers, params }
-        );
+        return this.http.get<HeartbeatResponse>(`${root}/heartbeat`, { headers });
+      }),
+      switchMap((obs) => obs)
+    );
+  }
+
+  /** One-time info about the current database from API. */
+  getCurrentDatabase(): Observable<ChromaDatabase> {
+    return from(this.configService.loadConfig()).pipe(
+      switchMap(async (c) => {
+        const headers = await this.headers();
+        const url = `${c.apiBaseUrl}/tenants/${encodeURIComponent(c.tenant)}/databases/${encodeURIComponent(c.database)}`;
+        return this.http.get<ChromaDatabase>(url, { headers });
       }),
       switchMap((obs) => obs)
     );
@@ -152,6 +175,20 @@ export class ChromaApiService {
         const headers = await this.headers();
         return this.http.delete<void>(
           `${base}/collections/${encodeURIComponent(collectionId)}`,
+          { headers }
+        );
+      }),
+      switchMap((obs) => obs)
+    );
+  }
+
+  /** Get a collection by CRN: tenant_resource_name:database_name:collection_name (all non-empty). */
+  getCollectionByCrn(crn: string): Observable<ChromaCollection> {
+    return from(this.apiRoot()).pipe(
+      switchMap(async (root) => {
+        const headers = await this.headers();
+        return this.http.get<ChromaCollection>(
+          `${root}/collections/${encodeURIComponent(crn)}`,
           { headers }
         );
       }),

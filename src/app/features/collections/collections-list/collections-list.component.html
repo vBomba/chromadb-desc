@@ -7,6 +7,37 @@
     </button>
   </mat-card-header>
   <mat-card-content>
+    @if (!loading()) {
+      <div class="filters">
+      <mat-form-field appearance="outline">
+        <mat-label>Filter by tenant</mat-label>
+        <input
+          matInput
+          [(ngModel)]="filterTenant"
+          (ngModelChange)="applyFilters()"
+          placeholder="tenant"
+        />
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Filter by database</mat-label>
+        <input
+          matInput
+          [(ngModel)]="filterDatabase"
+          (ngModelChange)="applyFilters()"
+          placeholder="database"
+        />
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="filters-text">
+        <mat-label>Filter by collection (name or ID)</mat-label>
+        <input
+          matInput
+          [(ngModel)]="filterText"
+          (ngModelChange)="applyFilters()"
+          placeholder="collection name or id"
+        />
+      </mat-form-field>
+    </div>
+    }
     @if (loading()) {
       <div class="loading">
         <mat-spinner diameter="32"></mat-spinner>

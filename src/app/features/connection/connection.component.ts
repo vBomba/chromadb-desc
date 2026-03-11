@@ -1,10 +1,11 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal, OnInit } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
 import { ConnectionHeartbeatService } from '../../core/services/connection-heartbeat.service';
+import { ChromaApiService, ChromaDatabase } from '../../core/services/chroma-api.service';
 
 @Component({
   selector: 'app-connection',
@@ -19,10 +20,38 @@ import { ConnectionHeartbeatService } from '../../core/services/connection-heart
   templateUrl: './connection.component.html',
   styleUrl: './connection.component.scss',
 })
-export class ConnectionComponent {
+export class ConnectionComponent implements OnInit {
   protected heartbeat = inject(ConnectionHeartbeatService);
+  private chroma = inject(ChromaApiService);
+
+  protected dbLoading = signal(false);
+  protected dbError = signal<string | null>(null);
+  protected database = signal<ChromaDatabase | null>(null);
+
+  ngOnInit(): void {
+    this.loadDatabaseInfo();
+  }
 
   protected checkConnection(): void {
     this.heartbeat.runCheck();
+  }
+
+  protected loadDatabaseInfo(): void {
+    this.dbLoading.set(true);
+    this.dbError.set(null);
+    this.chroma.getCurrentDatabase().subscribe({
+      next: (db) => {
+        this.database.set(db);
+        this.dbLoading.set(false);
+      },
+      error: (err) => {
+        const msg =
+          err?.error?.message ??
+          err?.message ??
+          (typeof err?.status === 'number' ? `HTTP ${err.status}` : 'Unknown error');
+        this.dbError.set(String(msg));
+        this.dbLoading.set(false);
+      },
+    });
   }
 }
