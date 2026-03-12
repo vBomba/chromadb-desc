@@ -1,13 +1,36 @@
 <h2 mat-dialog-title>Edit metadata</h2>
-<mat-dialog-content>
-  <p class="id-line"><strong>ID:</strong> <code>{{ row.id }}</code></p>
+<mat-dialog-content class="edit-meta-content">
+  <div class="header-row">
+    <div class="id-block">
+      <div class="label">ID</div>
+      <code>{{ row.id }}</code>
+    </div>
+    @if (row.document) {
+      <div class="doc-preview">
+        <div class="label">Document preview</div>
+        <div class="doc-text">
+          {{ row.document.length > 140 ? (row.document.substring(0, 140) + '…') : row.document }}
+        </div>
+      </div>
+    }
+  </div>
   <mat-form-field appearance="outline" class="full-width">
     <mat-label>Metadata (JSON)</mat-label>
-    <textarea matInput [formControl]="metadataControl" rows="8"></textarea>
+    <textarea
+      matInput
+      [formControl]="metadataControl"
+      rows="10"
+      class="metadata-textarea"
+      placeholder='{\n  "key": "value"\n}'
+    ></textarea>
+    <mat-hint align="start">Use valid JSON. Empty value means no metadata.</mat-hint>
   </mat-form-field>
 </mat-dialog-content>
 <mat-dialog-actions align="end">
   <button mat-button (click)="cancel()">Cancel</button>
+  <button mat-button type="button" (click)="resetToOriginal()" [disabled]="submitting">
+    Reset
+  </button>
   <button mat-flat-button color="primary" (click)="submit()" [disabled]="submitting">
     Save
   </button>

@@ -54,6 +54,10 @@ export class EditMetadataDialogComponent {
     this.dialogRef.close(false);
   }
 
+  protected resetToOriginal(): void {
+    this.metadataControl.setValue(this.formatMeta(this.row.metadata));
+  }
+
   protected submit(): void {
     if (this.submitting) return;
     let meta: Record<string, unknown> | null = null;
