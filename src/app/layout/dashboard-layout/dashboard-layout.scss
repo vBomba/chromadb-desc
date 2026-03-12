@@ -58,15 +58,15 @@
     height: 10px;
 
     &.connected {
-      color: var(--mat-sys-primary, #1976d2);
+      color: var(--mat-sys-primary);
     }
 
     &.disconnected {
-      color: var(--mat-sys-error, #d32f2f);
+      color: var(--mat-sys-error);
     }
 
     &.idle {
-      color: var(--mat-sys-outline, #757575);
+      color: var(--mat-sys-outline);
     }
   }
 }

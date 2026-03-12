@@ -17,12 +17,28 @@ mat-card-header {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
   flex-wrap: wrap;
 
   .search-field {
     flex: 1;
     min-width: 200px;
+  }
+}
+
+.metadata-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+
+  .meta-key {
+    min-width: 160px;
+  }
+
+  .meta-value {
+    flex: 1;
+    min-width: 220px;
   }
 }
 

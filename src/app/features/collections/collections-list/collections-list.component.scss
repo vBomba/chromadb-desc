@@ -16,6 +16,18 @@ mat-card-header {
   padding: 1rem 0;
 }
 
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.filters-text {
+  flex: 1;
+  min-width: 220px;
+}
+
 .collections-table {
   width: 100%;
 
