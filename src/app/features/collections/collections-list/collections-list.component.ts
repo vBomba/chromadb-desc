@@ -174,6 +174,14 @@ export class CollectionsListComponent implements OnInit {
     });
   }
 
+  protected copyId(id: string, event?: Event): void {
+    if (event) (event as Event).stopPropagation();
+    navigator.clipboard.writeText(id).then(
+      () => this.snackBar.open('ID copied', 'Close', { duration: 2000 }),
+      () => this.snackBar.open('Copy failed', 'Close', { duration: 3000 })
+    );
+  }
+
   protected openDeleteDialog(collection: ChromaCollection): void {
     const ref = this.dialog.open(DeleteCollectionDialogComponent, {
       width: '400px',

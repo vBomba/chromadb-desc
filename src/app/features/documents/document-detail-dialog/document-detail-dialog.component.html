@@ -1,0 +1,22 @@
+<h2 mat-dialog-title>Document details</h2>
+<mat-dialog-content class="detail-content">
+  <section class="detail-section">
+    <h3>ID</h3>
+    <code class="id-block">{{ row.id }}</code>
+  </section>
+  <section class="detail-section">
+    <h3>Document</h3>
+    <pre class="document-block">{{ row.document ?? '—' }}</pre>
+  </section>
+  <section class="detail-section">
+    <h3>Metadata</h3>
+    <pre class="metadata-block">{{ formatMetadata(row.metadata) }}</pre>
+  </section>
+  <section class="detail-section">
+    <h3>Embedding</h3>
+    <pre class="embedding-block">{{ embeddingSummary }}</pre>
+  </section>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-flat-button (click)="close()">Close</button>
+</mat-dialog-actions>

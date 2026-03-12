@@ -51,7 +51,12 @@
         </ng-container>
         <ng-container matColumnDef="id">
           <th mat-header-cell *matHeaderCellDef mat-sort-header>ID</th>
-          <td mat-cell *matCellDef="let row"><code class="id-cell">{{ row.id }}</code></td>
+          <td mat-cell *matCellDef="let row" class="id-cell-wrapper">
+            <code class="id-cell copyable" (click)="copyId(row.id, $event)" title="Copy ID">{{ row.id }}</code>
+            <button mat-icon-button (click)="copyId(row.id, $event)" aria-label="Copy ID" class="copy-btn">
+              <mat-icon>content_copy</mat-icon>
+            </button>
+          </td>
         </ng-container>
         <ng-container matColumnDef="dimension">
           <th mat-header-cell *matHeaderCellDef mat-sort-header>Dimension</th>

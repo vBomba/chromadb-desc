@@ -19,8 +19,20 @@ mat-card-header {
 .collections-table {
   width: 100%;
 
-  .id-cell {
-    font-size: 0.85em;
-    word-break: break-all;
+  .id-cell-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+
+    .id-cell.copyable {
+      cursor: pointer;
+      font-size: 0.85em;
+      word-break: break-all;
+      &:hover { opacity: 0.85; }
+    }
+
+    .copy-btn {
+      flex-shrink: 0;
+    }
   }
 }

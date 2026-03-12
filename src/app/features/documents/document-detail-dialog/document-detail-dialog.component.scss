@@ -1,0 +1,42 @@
+.detail-content {
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.detail-section {
+  margin-bottom: 1rem;
+
+  h3 {
+    margin: 0 0 0.35rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--mat-sys-on-surface-variant, #666);
+  }
+}
+
+.id-block,
+.document-block,
+.metadata-block,
+.embedding-block {
+  display: block;
+  margin: 0;
+  padding: 0.75rem;
+  border-radius: 4px;
+  font-size: 0.8125rem;
+  word-break: break-word;
+  white-space: pre-wrap;
+  background-color: var(--mat-sys-surface-container-high);
+  color: var(--mat-sys-on-surface);
+  border: 1px solid var(--mat-sys-outline-variant);
+}
+
+.document-block {
+  max-height: 12rem;
+  overflow-y: auto;
+}
+
+.metadata-block,
+.embedding-block {
+  max-height: 10rem;
+  overflow-y: auto;
+}

@@ -14,6 +14,7 @@ import { ErrorLogService } from '../../../core/services/error-log.service';
 import { AddDocumentDialogComponent } from '../add-document-dialog/add-document-dialog.component';
 import { EditMetadataDialogComponent } from '../edit-metadata-dialog/edit-metadata-dialog.component';
 import { DeleteDocumentDialogComponent } from '../delete-document-dialog/delete-document-dialog.component';
+import { DocumentDetailDialogComponent } from '../document-detail-dialog/document-detail-dialog.component';
 import { MatDialog } from '@angular/material/dialog';
 import { DocumentRow } from '../document-row.model';
 import { SelectionModel } from '@angular/cdk/collections';
@@ -122,18 +123,21 @@ export class DocumentsPageComponent implements OnInit {
     const rows: DocumentRow[] = ids.map((id, i) => {
       const v = embs[i];
       let preview: string | null = null;
+      let embedding: number[] | null = null;
       if (v && Array.isArray(v)) {
         const first = Array.isArray(v[0]) ? (v[0] as number[]) : (v as unknown as number[]);
         if (first.length) {
+          embedding = first;
           const norm = Math.sqrt(first.reduce((sum, x) => sum + x * x, 0));
           preview = `[${first.slice(0, 3).map((x) => x.toFixed(3)).join(', ')}…] ‖v‖≈${norm.toFixed(2)}`;
         }
       }
-    return {
+      return {
         id,
         document: docs[i] ?? null,
         metadata: metas[i] ?? null,
         embeddingPreview: preview,
+        embedding,
       };
     });
     this.dataSource.data = rows;
@@ -265,6 +269,22 @@ export class DocumentsPageComponent implements OnInit {
     });
     ref.afterClosed().subscribe((updated) => {
       if (updated) this.loadPage(this.pageIndex());
+    });
+  }
+
+  protected copyId(id: string, event?: Event): void {
+    if (event) (event as Event).stopPropagation();
+    navigator.clipboard.writeText(id).then(
+      () => this.snackBar.open('ID copied', 'Close', { duration: 2000 }),
+      () => this.snackBar.open('Copy failed', 'Close', { duration: 3000 })
+    );
+  }
+
+  protected openDetailDialog(row: DocumentRow): void {
+    this.dialog.open(DocumentDetailDialogComponent, {
+      width: '560px',
+      maxWidth: '95vw',
+      data: { row },
     });
   }
 
