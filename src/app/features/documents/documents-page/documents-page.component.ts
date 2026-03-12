@@ -10,6 +10,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { ChromaApiService, GetRecordsResponse } from '../../../core/services/chroma-api.service';
+import { ErrorLogService } from '../../../core/services/error-log.service';
 import { AddDocumentDialogComponent } from '../add-document-dialog/add-document-dialog.component';
 import { EditMetadataDialogComponent } from '../edit-metadata-dialog/edit-metadata-dialog.component';
 import { DeleteDocumentDialogComponent } from '../delete-document-dialog/delete-document-dialog.component';
@@ -44,6 +45,7 @@ export class DocumentsPageComponent implements OnInit {
   private chroma = inject(ChromaApiService);
   private dialog = inject(MatDialog);
   private snackBar = inject(MatSnackBar);
+  private errorLog = inject(ErrorLogService);
 
   protected collectionId = signal<string | null>(null);
   protected collectionName = signal<string>('');
@@ -103,8 +105,10 @@ export class DocumentsPageComponent implements OnInit {
       })
       .subscribe({
         next: (res) => this.applyGetResponse(res, pageIndex),
-        error: () => {
+        error: (err) => {
           this.loading.set(false);
+          const { message, detail, hint } = ErrorLogService.messageFromError(err);
+          this.errorLog.push(`Documents: ${message}`, detail, hint);
           this.snackBar.open('Failed to load documents', 'Close', { duration: 5000 });
         },
       });
@@ -166,8 +170,10 @@ export class DocumentsPageComponent implements OnInit {
           this.dataSource.data = rows;
           this.loading.set(false);
         },
-        error: () => {
+        error: (err) => {
           this.loading.set(false);
+          const { message, detail, hint } = ErrorLogService.messageFromError(err);
+          this.errorLog.push(`Search: ${message}`, detail, hint);
           this.snackBar.open('Search failed', 'Close', { duration: 5000 });
         },
       });
@@ -208,8 +214,10 @@ export class DocumentsPageComponent implements OnInit {
         this.selection.clear();
         this.loadPage(this.pageIndex());
       },
-      error: () => {
+      error: (err) => {
         this.loading.set(false);
+        const { message, detail, hint } = ErrorLogService.messageFromError(err);
+        this.errorLog.push(`Bulk delete: ${message}`, detail, hint);
         this.snackBar.open('Bulk delete failed', 'Close', { duration: 5000 });
       },
     });

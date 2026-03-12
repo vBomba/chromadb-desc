@@ -83,7 +83,7 @@ export interface ApiError {
 }
 
 export interface HeartbeatResponse {
-  'nanosecond heartbeat': number;
+  'nanosecond heartbeat'?: number;
 }
 
 export interface ChromaDatabase {
@@ -94,6 +94,12 @@ export interface ChromaDatabase {
 
 export interface CollectionCount {
   count: number;
+}
+
+/** GET /api/v2/pre-flight-checks */
+export interface ChecklistResponse {
+  max_batch_size?: number;
+  supports_base64_encoding?: boolean;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -120,15 +126,18 @@ export class ChromaApiService {
     return h;
   }
 
-  /** Heartbeat for connection check: GET /api/v2/heartbeat */
-  heartbeat(): Observable<HeartbeatResponse> {
+  /** Heartbeat for connection check: GET /api/v2/heartbeat (we only care that it succeeds). */
+  heartbeat(): Observable<void> {
     return from(this.apiRoot()).pipe(
       switchMap(async (root) => {
         const headers = await this.headers();
-        return this.http.get<HeartbeatResponse>(`${root}/heartbeat`, { headers });
+        return this.http.get(`${root}/heartbeat`, {
+          headers,
+          responseType: 'text',
+        });
       }),
-      switchMap((obs) => obs)
-    );
+      switchMap((obs) => obs as Observable<unknown>)
+    ) as Observable<void>;
   }
 
   /** One-time info about the current database from API. */
@@ -138,6 +147,50 @@ export class ChromaApiService {
         const headers = await this.headers();
         const url = `${c.apiBaseUrl}/tenants/${encodeURIComponent(c.tenant)}/databases/${encodeURIComponent(c.database)}`;
         return this.http.get<ChromaDatabase>(url, { headers });
+      }),
+      switchMap((obs) => obs)
+    );
+  }
+
+  /** GET /api/v2/version */
+  getVersion(): Observable<string> {
+    return from(this.apiRoot()).pipe(
+      switchMap(async (root) => {
+        const headers = await this.headers();
+        return this.http.get(`${root}/version`, { headers, responseType: 'text' });
+      }),
+      switchMap((obs) => obs)
+    );
+  }
+
+  /** GET /api/v2/healthcheck */
+  getHealthcheck(): Observable<string> {
+    return from(this.apiRoot()).pipe(
+      switchMap(async (root) => {
+        const headers = await this.headers();
+        return this.http.get(`${root}/healthcheck`, { headers, responseType: 'text' });
+      }),
+      switchMap((obs) => obs)
+    );
+  }
+
+  /** GET /api/v2/pre-flight-checks */
+  getPreFlightChecks(): Observable<ChecklistResponse> {
+    return from(this.apiRoot()).pipe(
+      switchMap(async (root) => {
+        const headers = await this.headers();
+        return this.http.get<ChecklistResponse>(`${root}/pre-flight-checks`, { headers });
+      }),
+      switchMap((obs) => obs)
+    );
+  }
+
+  /** GET .../collections_count — total collections in current tenant/database */
+  getCollectionsCount(): Observable<number> {
+    return from(this.baseUrl()).pipe(
+      switchMap(async (base) => {
+        const headers = await this.headers();
+        return this.http.get<number>(`${base}/collections_count`, { headers });
       }),
       switchMap((obs) => obs)
     );

@@ -22,6 +22,16 @@ export const routes: Routes = [
           import('./features/configuration/configuration.component').then((m) => m.ConfigurationComponent),
       },
       {
+        path: 'server-status',
+        loadComponent: () =>
+          import('./features/server-status/server-status.component').then((m) => m.ServerStatusComponent),
+      },
+      {
+        path: 'logs',
+        loadComponent: () =>
+          import('./features/logs/logs.component').then((m) => m.LogsComponent),
+      },
+      {
         path: 'collections',
         loadComponent: () =>
           import('./features/collections/collections-list/collections-list.component').then(

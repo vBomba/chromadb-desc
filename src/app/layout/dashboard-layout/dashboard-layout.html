@@ -15,6 +15,14 @@
         <mat-icon matListItemIcon>settings</mat-icon>
         <span matListItemTitle>Configuration</span>
       </a>
+      <a mat-list-item routerLink="/server-status" routerLinkActive="active" (click)="isHandset() && drawer.close()">
+        <mat-icon matListItemIcon>monitor_heart</mat-icon>
+        <span matListItemTitle>Server status</span>
+      </a>
+      <a mat-list-item routerLink="/logs" routerLinkActive="active" (click)="isHandset() && drawer.close()">
+        <mat-icon matListItemIcon>list_alt</mat-icon>
+        <span matListItemTitle>Logs</span>
+      </a>
       <a mat-list-item routerLink="/collections" routerLinkActive="active" (click)="isHandset() && drawer.close()">
         <mat-icon matListItemIcon>folder</mat-icon>
         <span matListItemTitle>Collections</span>

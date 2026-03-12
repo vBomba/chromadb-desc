@@ -2,6 +2,7 @@ import { Injectable, inject, signal, OnDestroy } from '@angular/core';
 import { Subscription, interval, switchMap, of, catchError } from 'rxjs';
 import { ChromaApiService } from './chroma-api.service';
 import { ConfigService } from './config.service';
+import { ErrorLogService } from './error-log.service';
 
 export type HeartbeatStatus = 'idle' | 'checking' | 'connected' | 'disconnected';
 
@@ -9,6 +10,7 @@ export type HeartbeatStatus = 'idle' | 'checking' | 'connected' | 'disconnected'
 export class ConnectionHeartbeatService implements OnDestroy {
   private chroma = inject(ChromaApiService);
   private configService = inject(ConfigService);
+  private errorLog = inject(ErrorLogService);
   private subscription: Subscription | null = null;
 
   readonly status = signal<HeartbeatStatus>('idle');
@@ -26,13 +28,11 @@ export class ConnectionHeartbeatService implements OnDestroy {
             this.status.set('checking');
             return this.chroma.heartbeat().pipe(
               catchError((err) => {
-                const msg =
-                  err?.error?.message ??
-                  err?.message ??
-                  (typeof err?.status === 'number' ? `HTTP ${err.status}` : 'Unknown error');
-                this.lastError.set(String(msg));
+                const { message, detail, hint } = ErrorLogService.messageFromError(err);
+                this.lastError.set(detail);
                 this.status.set('disconnected');
                 this.lastCheckAt.set(new Date());
+                this.errorLog.push(`Heartbeat: ${message}`, detail, hint);
                 return of(null);
               })
             );
@@ -60,13 +60,11 @@ export class ConnectionHeartbeatService implements OnDestroy {
         this.lastCheckAt.set(new Date());
       },
       error: (err) => {
-        const msg =
-          err?.error?.message ??
-          err?.message ??
-          (typeof err?.status === 'number' ? `HTTP ${err.status}` : 'Unknown error');
-        this.lastError.set(String(msg));
+        const { message, detail, hint } = ErrorLogService.messageFromError(err);
+        this.lastError.set(detail);
         this.status.set('disconnected');
         this.lastCheckAt.set(new Date());
+        this.errorLog.push(`Heartbeat: ${message}`, detail, hint);
       },
     });
   }

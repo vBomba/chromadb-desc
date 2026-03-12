@@ -1,0 +1,46 @@
+.status-card {
+  max-width: 640px;
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.status-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.status-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+
+  .label {
+    font-weight: 500;
+    color: var(--mat-sys-on-surface-variant, #666);
+  }
+
+  .value {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+
+    mat-icon {
+      font-size: 1.2rem;
+      width: 1.2rem;
+      height: 1.2rem;
+    }
+
+    &.success mat-icon {
+      color: var(--mat-sys-primary, green);
+    }
+
+    &.error mat-icon {
+      color: var(--mat-sys-error, red);
+    }
+  }
+}

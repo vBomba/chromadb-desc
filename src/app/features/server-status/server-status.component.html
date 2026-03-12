@@ -1,0 +1,64 @@
+<mat-card class="status-card">
+  <mat-card-header>
+    <mat-card-title>Server status</mat-card-title>
+    <mat-card-subtitle>Version, healthcheck, pre-flight checks, collections count</mat-card-subtitle>
+    <button mat-flat-button color="primary" mat-card-avatar (click)="refresh()" [disabled]="loading()">
+      <mat-icon>refresh</mat-icon>
+    </button>
+  </mat-card-header>
+  <mat-card-content>
+    @if (loading()) {
+      <div class="loading">
+        <mat-spinner diameter="32"></mat-spinner>
+        <span>Loading…</span>
+      </div>
+    } @else {
+      <div class="status-grid">
+        <div class="status-item">
+          <span class="label">Version</span>
+          @if (version()) {
+            <span class="value success"><mat-icon>check_circle</mat-icon> {{ version() }}</span>
+          } @else if (versionError()) {
+            <span class="value error"><mat-icon>error</mat-icon> {{ versionError() }}</span>
+          } @else {
+            <span class="value">—</span>
+          }
+        </div>
+        <div class="status-item">
+          <span class="label">Healthcheck</span>
+          @if (healthcheck()) {
+            <span class="value success"><mat-icon>check_circle</mat-icon> {{ healthcheck() }}</span>
+          } @else if (healthcheckError()) {
+            <span class="value error"><mat-icon>error</mat-icon> {{ healthcheckError() }}</span>
+          } @else {
+            <span class="value">—</span>
+          }
+        </div>
+        <div class="status-item">
+          <span class="label">Pre-flight checks</span>
+          @if (preflight()) {
+            <span class="value success">
+              <mat-icon>check_circle</mat-icon>
+              max_batch_size: {{ preflight()!.max_batch_size ?? '—' }},
+              supports_base64: {{ preflight()!.supports_base64_encoding ?? '—' }}
+            </span>
+          } @else if (preflightError()) {
+            <span class="value error"><mat-icon>error</mat-icon> {{ preflightError() }}</span>
+          } @else {
+            <span class="value">—</span>
+          }
+        </div>
+        <div class="status-item">
+          <span class="label">Collections count (current DB)</span>
+          @if (collectionsCount() !== null) {
+            <span class="value success"><mat-icon>check_circle</mat-icon> {{ collectionsCount() }}</span>
+          } @else if (collectionsCountError()) {
+            <span class="value error"><mat-icon>error</mat-icon> {{ collectionsCountError() }}</span>
+          } @else {
+            <span class="value">—</span>
+          }
+        </div>
+      </div>
+    }
+  </mat-card-content>
+</mat-card>

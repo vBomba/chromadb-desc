@@ -13,6 +13,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { ChromaApiService, ChromaCollection } from '../../../core/services/chroma-api.service';
+import { ErrorLogService } from '../../../core/services/error-log.service';
 import { CreateCollectionDialogComponent } from '../create-collection-dialog/create-collection-dialog.component';
 import { DeleteCollectionDialogComponent } from '../delete-collection-dialog/delete-collection-dialog.component';
 import { MatDialog } from '@angular/material/dialog';
@@ -40,6 +41,7 @@ export class CollectionsListComponent implements OnInit {
   private router = inject(Router);
   private dialog = inject(MatDialog);
   private snackBar = inject(MatSnackBar);
+  private errorLog = inject(ErrorLogService);
 
   protected loading = signal(true);
   protected dataSource = new MatTableDataSource<ChromaCollection>([]);
@@ -90,8 +92,10 @@ export class CollectionsListComponent implements OnInit {
         this.loading.set(false);
         this.loadCountsForCollections(list);
       },
-      error: () => {
+      error: (err) => {
         this.loading.set(false);
+        const { message, detail, hint } = ErrorLogService.messageFromError(err);
+        this.errorLog.push(`Collections: ${message}`, detail, hint);
         this.snackBar.open('Failed to load collections', 'Close', { duration: 5000 });
       },
     });
@@ -139,9 +143,11 @@ export class CollectionsListComponent implements OnInit {
             this.dataSource.data = [c];
             this.loading.set(false);
           },
-          error: () => {
+          error: (err) => {
             this.dataSource.data = [];
             this.loading.set(false);
+            const { message, detail, hint } = ErrorLogService.messageFromError(err);
+            this.errorLog.push(`CRN: ${message}`, detail, hint ?? 'Перевірте tenant:database:collection.');
             this.snackBar.open('Collection not found (CRN)', 'Close', { duration: 4000 });
           },
         });
