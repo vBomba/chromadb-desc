@@ -228,15 +228,18 @@ export class DocumentsPageComponent implements OnInit {
     this.loadPage(0);
   }
 
+  /** Build Chroma where clause. Empty filter must be { "$and": [] } (match all), not {}. */
   private buildWhere(): unknown {
     const key = this.metadataKey().trim();
     const value = this.metadataValue().trim();
-    if (!key || !value) return {};
+    if (!key || !value) {
+      return { $and: [] };
+    }
     try {
       const parsed = JSON.parse(value);
-      return { [key]: parsed };
+      return { [key]: { $eq: parsed } };
     } catch {
-      return { [key]: value };
+      return { [key]: { $eq: value } };
     }
   }
 
