@@ -31,6 +31,13 @@ mat-card-header {
 .collections-table {
   width: 100%;
 
+  .mat-header-cell,
+  .mat-cell {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+    vertical-align: middle;
+  }
+
   .id-cell-wrapper {
     display: flex;
     align-items: center;

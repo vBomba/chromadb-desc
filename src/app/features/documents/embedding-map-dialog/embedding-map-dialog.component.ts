@@ -51,6 +51,12 @@ export class EmbeddingMapDialogComponent implements AfterViewInit {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
+    const styles = getComputedStyle(document.body);
+    const surface = styles.getPropertyValue('--mat-sys-surface') || '#ffffff';
+    const primary = styles.getPropertyValue('--mat-sys-primary') || '#1976d2';
+    const secondary = styles.getPropertyValue('--mat-sys-secondary') || '#ff9800';
+    const neighbor = styles.getPropertyValue('--mat-sys-on-surface-variant') || '#666666';
+
     const rowsWithEmb = this.data.rows.filter((r) => Array.isArray(r.embedding) && r.embedding && r.embedding.length);
     if (!rowsWithEmb.length) return;
 
@@ -69,10 +75,8 @@ export class EmbeddingMapDialogComponent implements AfterViewInit {
     const h = canvas.height;
 
     ctx.clearRect(0, 0, w, h);
-    ctx.fillStyle = getComputedStyle(canvas).getPropertyValue('--mat-sys-surface') || '#ffffff';
+    ctx.fillStyle = surface;
     ctx.fillRect(0, 0, w, h);
-
-    const primary = getComputedStyle(canvas).getPropertyValue('--mat-sys-primary') || '#1976d2';
 
     this.points = projected.map(([px, py], i) => {
       const nx = maxX === minX ? 0.5 : (px - minX) / (maxX - minX);
@@ -85,9 +89,9 @@ export class EmbeddingMapDialogComponent implements AfterViewInit {
     for (const p of this.points) {
       let color = primary;
       if (this.selected && p.row.id === this.selected.row.id) {
-        color = getComputedStyle(canvas).getPropertyValue('--mat-sys-secondary') || '#ff9800';
+        color = secondary;
       } else if (this.neighborIds.has(p.row.id)) {
-        color = getComputedStyle(canvas).getPropertyValue('--mat-sys-on-surface-variant') || '#666666';
+        color = neighbor;
       }
       ctx.fillStyle = color;
       ctx.beginPath();
