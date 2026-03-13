@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, OnInit, AfterViewInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
@@ -36,7 +36,7 @@ import { MatDialog } from '@angular/material/dialog';
   templateUrl: './collections-list.component.html',
   styleUrl: './collections-list.component.scss',
 })
-export class CollectionsListComponent implements OnInit {
+export class CollectionsListComponent implements OnInit, AfterViewInit {
   private chroma = inject(ChromaApiService);
   private router = inject(Router);
   private dialog = inject(MatDialog);
@@ -54,7 +54,7 @@ export class CollectionsListComponent implements OnInit {
   private filterDebounceHandle: number | null = null;
   protected counts = new Map<string, number>();
 
-  @ViewChild(MatSort, { static: true }) sort!: MatSort;
+  @ViewChild(MatSort, { static: false }) sort?: MatSort;
 
   ngOnInit(): void {
     this.dataSource.filterPredicate = (data: ChromaCollection, raw: string): boolean => {
@@ -78,8 +78,13 @@ export class CollectionsListComponent implements OnInit {
       return tenantOk && databaseOk && textOk;
     };
 
-    this.dataSource.sort = this.sort;
     this.load();
+  }
+
+  ngAfterViewInit(): void {
+    if (this.sort) {
+      this.dataSource.sort = this.sort;
+    }
   }
 
   protected load(): void {
