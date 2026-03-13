@@ -7,9 +7,14 @@
       {{ collectionName() || 'Documents' }}
     </mat-card-title>
     <mat-card-subtitle>Collection ID: {{ collectionId() }}</mat-card-subtitle>
-    <button mat-flat-button color="primary" mat-card-avatar (click)="openAddDialog()">
-      <mat-icon>add</mat-icon>
-    </button>
+    <div class="header-actions" mat-card-avatar>
+      <button mat-icon-button (click)="openEmbeddingMap()" [disabled]="!hasEmbeddingsForMap()" aria-label="Show embedding map">
+        <mat-icon>scatter_plot</mat-icon>
+      </button>
+      <button mat-icon-button color="primary" (click)="openAddDialog()" aria-label="Add document">
+        <mat-icon>add</mat-icon>
+      </button>
+    </div>
   </mat-card-header>
   <mat-card-content>
     <div class="search-bar">

@@ -15,6 +15,7 @@ import { AddDocumentDialogComponent } from '../add-document-dialog/add-document-
 import { EditMetadataDialogComponent } from '../edit-metadata-dialog/edit-metadata-dialog.component';
 import { DeleteDocumentDialogComponent } from '../delete-document-dialog/delete-document-dialog.component';
 import { DocumentDetailDialogComponent } from '../document-detail-dialog/document-detail-dialog.component';
+import { EmbeddingMapDialogComponent } from '../embedding-map-dialog/embedding-map-dialog.component';
 import { MatDialog } from '@angular/material/dialog';
 import { DocumentRow } from '../document-row.model';
 import { SelectionModel } from '@angular/cdk/collections';
@@ -308,5 +309,24 @@ export class DocumentsPageComponent implements OnInit {
   protected truncate(text: string | null, max = 80): string {
     if (text == null) return '—';
     return text.length <= max ? text : text.slice(0, max) + '…';
+  }
+
+  protected hasEmbeddingsForMap(): boolean {
+    return this.dataSource.data.some((r) => Array.isArray(r.embedding) && r.embedding && r.embedding.length);
+  }
+
+  protected openEmbeddingMap(): void {
+    if (!this.hasEmbeddingsForMap()) {
+      this.snackBar.open('No embeddings on current page', 'Close', { duration: 3000 });
+      return;
+    }
+    this.dialog.open(EmbeddingMapDialogComponent, {
+      width: '720px',
+      maxWidth: '95vw',
+      data: {
+        rows: this.dataSource.data,
+        title: this.collectionName() || 'Documents',
+      },
+    });
   }
 }

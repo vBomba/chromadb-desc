@@ -1,0 +1,16 @@
+<h2 mat-dialog-title>Embedding map</h2>
+<mat-dialog-content class="map-content">
+  @if (!hasEmbeddings) {
+    <p>No embeddings available for current page.</p>
+  } @else {
+    <canvas #canvas class="map-canvas" width="640" height="420" (click)="onCanvasClick($event)"></canvas>
+    <p class="hint">
+      2D projection of embeddings for current page (approximate random projection). Click a point to open details;
+      its nearest neighbors are highlighted.
+    </p>
+  }
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-flat-button (click)="close()">Close</button>
+</mat-dialog-actions>
+
