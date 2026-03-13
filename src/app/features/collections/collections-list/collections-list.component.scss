@@ -35,6 +35,8 @@ mat-card-header {
     display: flex;
     align-items: center;
     gap: 0.25rem;
+    width: 100%;
+    height: 100%;
 
     .id-cell.copyable {
       cursor: pointer;

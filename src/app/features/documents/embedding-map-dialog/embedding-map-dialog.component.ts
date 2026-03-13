@@ -24,7 +24,7 @@ interface Point2D {
   styleUrl: './embedding-map-dialog.component.scss',
 })
 export class EmbeddingMapDialogComponent implements AfterViewInit {
-  @ViewChild('canvas', { static: true }) canvasRef!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('canvas', { static: false }) canvasRef?: ElementRef<HTMLCanvasElement>;
 
   constructor(
     private dialogRef: MatDialogRef<EmbeddingMapDialogComponent>,
@@ -41,11 +41,12 @@ export class EmbeddingMapDialogComponent implements AfterViewInit {
   }
 
   ngAfterViewInit(): void {
-    if (!this.hasEmbeddings) return;
+    if (!this.hasEmbeddings || !this.canvasRef) return;
     this.draw();
   }
 
   private draw(): void {
+    if (!this.canvasRef) return;
     const canvas = this.canvasRef.nativeElement;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
@@ -124,6 +125,7 @@ export class EmbeddingMapDialogComponent implements AfterViewInit {
   }
 
   onCanvasClick(event: MouseEvent): void {
+    if (!this.canvasRef) return;
     const canvas = this.canvasRef.nativeElement;
     const rect = canvas.getBoundingClientRect();
     const x = event.clientX - rect.left;
