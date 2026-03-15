@@ -41,8 +41,11 @@ export class EmbeddingMapDialogComponent implements AfterViewInit {
   }
 
   ngAfterViewInit(): void {
-    if (!this.hasEmbeddings || !this.canvasRef) return;
-    this.draw();
+    if (!this.hasEmbeddings) return;
+    // Defer until after dialog is laid out so canvas is in DOM with correct dimensions
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => this.draw());
+    });
   }
 
   private draw(): void {
@@ -51,38 +54,57 @@ export class EmbeddingMapDialogComponent implements AfterViewInit {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const styles = getComputedStyle(document.body);
-    const surface = styles.getPropertyValue('--mat-sys-surface') || '#ffffff';
-    const primary = styles.getPropertyValue('--mat-sys-primary') || '#1976d2';
-    const secondary = styles.getPropertyValue('--mat-sys-secondary') || '#ff9800';
-    const neighbor = styles.getPropertyValue('--mat-sys-on-surface-variant') || '#666666';
+    const w = canvas.width;
+    const h = canvas.height;
+    if (w < 10 || h < 10) return;
 
-    const rowsWithEmb = this.data.rows.filter((r) => Array.isArray(r.embedding) && r.embedding && r.embedding.length);
-    if (!rowsWithEmb.length) return;
+    // Use fixed visible colors so canvas is never black and points are always visible
+    const bg = '#f5f5f5';
+    const primary = '#1976d2';
+    const secondary = '#ed6c02';
+    const neighbor = '#5c6bc0';
 
-    const embeddings = rowsWithEmb.map((r) => r.embedding!) as number[][];
+    const rowsWithEmb = this.data.rows.filter((r) => Array.isArray(r.embedding) && r.embedding.length > 0);
+    if (!rowsWithEmb.length) {
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, w, h);
+      return;
+    }
+
+    const embeddings = rowsWithEmb.map((r) => this.normalizeEmbedding(r.embedding!));
     const projected = this.projectTo2D(embeddings);
+    if (!projected.length) {
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, w, h);
+      return;
+    }
 
-    const xs = projected.map((p) => p[0]);
-    const ys = projected.map((p) => p[1]);
+    const xs = projected.map((p) => p[0]).filter((n) => Number.isFinite(n));
+    const ys = projected.map((p) => p[1]).filter((n) => Number.isFinite(n));
+    if (!xs.length || !ys.length) {
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, w, h);
+      return;
+    }
+
     const minX = Math.min(...xs);
     const maxX = Math.max(...xs);
     const minY = Math.min(...ys);
     const maxY = Math.max(...ys);
 
     const padding = 24;
-    const w = canvas.width;
-    const h = canvas.height;
+    const plotW = w - 2 * padding;
+    const plotH = h - 2 * padding;
 
     ctx.clearRect(0, 0, w, h);
-    ctx.fillStyle = surface;
+    ctx.fillStyle = bg;
     ctx.fillRect(0, 0, w, h);
 
     this.points = projected.map(([px, py], i) => {
-      const nx = maxX === minX ? 0.5 : (px - minX) / (maxX - minX);
-      const ny = maxY === minY ? 0.5 : (py - minY) / (maxY - minY);
-      const x = padding + nx * (w - 2 * padding);
-      const y = padding + (1 - ny) * (h - 2 * padding);
+      const nx = maxX === minX ? 0.5 : (Number.isFinite(px) ? (px - minX) / (maxX - minX) : 0.5);
+      const ny = maxY === minY ? 0.5 : (Number.isFinite(py) ? (py - minY) / (maxY - minY) : 0.5);
+      const x = padding + nx * plotW;
+      const y = padding + (1 - ny) * plotH;
       return { x, y, row: rowsWithEmb[i] };
     });
 
@@ -95,9 +117,18 @@ export class EmbeddingMapDialogComponent implements AfterViewInit {
       }
       ctx.fillStyle = color;
       ctx.beginPath();
-      ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+      ctx.arc(p.x, p.y, 5, 0, Math.PI * 2);
       ctx.fill();
     }
+  }
+
+  /** Ensure embedding is a flat number[] (API may return nested array). */
+  private normalizeEmbedding(v: number[] | number[][]): number[] {
+    if (!Array.isArray(v) || !v.length) return [];
+    const first = v[0];
+    if (typeof first === 'number') return v as number[];
+    if (Array.isArray(first)) return first as number[];
+    return [];
   }
 
   // Simple deterministic random projection from high-D to 2D
