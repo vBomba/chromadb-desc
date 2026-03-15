@@ -65,10 +65,7 @@ export class DocumentsPageComponent implements OnInit {
   protected metadataKey = signal('');
   protected metadataValue = signal('');
 
-  protected paginatorLength = computed(() => {
-    const total = this.totalEstimate();
-    return total > 0 ? total : this.pageSize + 1;
-  });
+  protected paginatorLength = computed(() => this.totalEstimate());
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('collectionId');
@@ -106,7 +103,15 @@ export class DocumentsPageComponent implements OnInit {
         offset,
       })
       .subscribe({
-        next: (res) => this.applyGetResponse(res, pageIndex),
+        next: (res) => {
+          this.applyGetResponse(res, pageIndex);
+          if (this.searchMode() === 'list' && !this.hasMetadataFilter()) {
+            this.chroma.countRecords(cid).subscribe({
+              next: (r) => this.totalEstimate.set(r.count),
+              error: () => {},
+            });
+          }
+        },
         error: (err) => {
           this.loading.set(false);
           const { message, detail, hint } = ErrorLogService.messageFromError(err);
@@ -114,6 +119,10 @@ export class DocumentsPageComponent implements OnInit {
           this.snackBar.open('Failed to load documents', 'Close', { duration: 5000 });
         },
       });
+  }
+
+  private hasMetadataFilter(): boolean {
+    return this.metadataKey().trim().length > 0 && this.metadataValue().trim().length > 0;
   }
 
   private applyGetResponse(res: GetRecordsResponse, pageIndex: number): void {
@@ -142,7 +151,12 @@ export class DocumentsPageComponent implements OnInit {
       };
     });
     this.dataSource.data = rows;
-    this.totalEstimate.set(pageIndex * this.pageSize + rows.length + (rows.length < this.pageSize ? 0 : 1));
+    const loaded = pageIndex * this.pageSize + rows.length;
+    const total =
+      this.hasMetadataFilter()
+        ? loaded + (rows.length >= this.pageSize ? 1 : 0)
+        : loaded;
+    this.totalEstimate.set(total > 0 ? total : this.pageSize);
     this.loading.set(false);
   }
 
