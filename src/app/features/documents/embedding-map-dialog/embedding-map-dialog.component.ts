@@ -160,11 +160,13 @@ export class EmbeddingMapDialogComponent implements AfterViewInit {
   }
 
   onCanvasClick(event: MouseEvent): void {
-    if (!this.canvasRef) return;
+    if (!this.canvasRef || !this.points.length) return;
     const canvas = this.canvasRef.nativeElement;
     const rect = canvas.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const x = (event.clientX - rect.left) * scaleX;
+    const y = (event.clientY - rect.top) * scaleY;
     let closest: Point2D | null = null;
     let minDist = Infinity;
     for (const p of this.points) {
@@ -176,7 +178,7 @@ export class EmbeddingMapDialogComponent implements AfterViewInit {
         closest = p;
       }
     }
-    const radius2 = 10 * 10;
+    const radius2 = 15 * 15;
     if (!closest || minDist > radius2) return;
 
     this.selected = closest;
@@ -193,13 +195,14 @@ export class EmbeddingMapDialogComponent implements AfterViewInit {
   private updateNeighbors(): void {
     this.neighborIds.clear();
     if (!this.selected || !this.selected.row.embedding) return;
-    const target = this.selected.row.embedding;
+    const target = this.normalizeEmbedding(this.selected.row.embedding);
+    if (!target.length) return;
     const rows = this.data.rows.filter((r) => Array.isArray(r.embedding) && r.embedding && r.embedding.length);
     const distances = rows
       .filter((r) => r.id !== this.selected!.row.id)
       .map((r) => ({
         id: r.id,
-        d2: this.squaredDistance(target, r.embedding as number[]),
+        d2: this.squaredDistance(target, this.normalizeEmbedding(r.embedding!)),
       }))
       .sort((a, b) => a.d2 - b.d2)
       .slice(0, 8);

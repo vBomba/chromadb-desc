@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit, AfterViewInit } from '@angular/core';
+import { ChangeDetectorRef, Component, inject, signal, OnInit, AfterViewInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
@@ -42,6 +42,7 @@ export class CollectionsListComponent implements OnInit, AfterViewInit {
   private dialog = inject(MatDialog);
   private snackBar = inject(MatSnackBar);
   private errorLog = inject(ErrorLogService);
+  private cdr = inject(ChangeDetectorRef);
 
   protected loading = signal(true);
   protected dataSource = new MatTableDataSource<ChromaCollection>([]);
@@ -111,7 +112,11 @@ export class CollectionsListComponent implements OnInit, AfterViewInit {
     for (const c of list) {
       this.chroma.countRecords(c.id).subscribe({
         next: (res) => {
-          this.counts.set(c.id, res.count ?? 0);
+          const count = res.count ?? 0;
+          setTimeout(() => {
+            this.counts.set(c.id, count);
+            this.cdr.detectChanges();
+          }, 0);
         },
         error: () => {
           // Ignore count errors for now.
