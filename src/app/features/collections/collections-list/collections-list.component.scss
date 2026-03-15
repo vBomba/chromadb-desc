@@ -31,11 +31,18 @@ mat-card-header {
 .collections-table {
   width: 100%;
 
+  .mat-header-row,
+  .mat-row {
+    min-height: 48px;
+  }
+
   .mat-header-cell,
   .mat-cell {
-    padding-top: 0.5rem;
-    padding-bottom: 0.5rem;
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
     vertical-align: middle;
+    line-height: 1.5;
+    box-sizing: border-box;
   }
 
   .id-cell-wrapper {
@@ -43,12 +50,17 @@ mat-card-header {
     align-items: center;
     gap: 0.25rem;
     width: 100%;
-    height: 100%;
+    min-height: 2.5rem;
+    box-sizing: border-box;
 
-    .id-cell.copyable {
+    .id-cell.copyable,
+    .id-cell {
       cursor: pointer;
-      font-size: 0.85em;
+      font-size: inherit;
+      line-height: inherit;
       word-break: break-all;
+      margin: 0;
+      padding: 0;
       &:hover { opacity: 0.85; }
     }
 
