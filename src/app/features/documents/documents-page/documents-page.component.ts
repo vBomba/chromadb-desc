@@ -65,7 +65,10 @@ export class DocumentsPageComponent implements OnInit {
   protected metadataKey = signal('');
   protected metadataValue = signal('');
 
-  protected paginatorLength = computed(() => this.totalEstimate());
+  protected paginatorLength = computed(() => {
+    const t = this.totalEstimate();
+    return typeof t === 'number' && t >= 0 ? t : this.pageSize;
+  });
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('collectionId');
@@ -107,7 +110,11 @@ export class DocumentsPageComponent implements OnInit {
           this.applyGetResponse(res, pageIndex);
           if (this.searchMode() === 'list' && !this.hasMetadataFilter()) {
             this.chroma.countRecords(cid).subscribe({
-              next: (r) => this.totalEstimate.set(r.count),
+              next: (r: { count?: number; total?: number } | number) => {
+                const count =
+                  typeof r === 'number' ? r : (typeof (r as { count?: number }).count === 'number' ? (r as { count: number }).count : (r as { total?: number }).total);
+                if (typeof count === 'number' && count >= 0) this.totalEstimate.set(count);
+              },
               error: () => {},
             });
           }
@@ -155,8 +162,8 @@ export class DocumentsPageComponent implements OnInit {
     const total =
       this.hasMetadataFilter()
         ? loaded + (rows.length >= this.pageSize ? 1 : 0)
-        : loaded;
-    this.totalEstimate.set(total > 0 ? total : this.pageSize);
+        : Math.max(loaded, rows.length > 0 ? loaded : 0);
+    this.totalEstimate.set(total >= 0 ? total : this.pageSize);
     this.loading.set(false);
   }
 
