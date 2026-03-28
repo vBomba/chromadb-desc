@@ -1,5 +1,7 @@
-import { Component, inject, signal, computed, effect, OnInit } from '@angular/core';
+import { Component, inject, signal, computed, effect, OnInit, DestroyRef } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Subscription } from 'rxjs';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
@@ -10,7 +12,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { ChromaApiService, GetRecordsResponse } from '../../../core/services/chroma-api.service';
+import { ChromaApiService } from '../../../core/services/chroma-api.service';
 import { ErrorLogService } from '../../../core/services/error-log.service';
 import { AddDocumentDialogComponent } from '../add-document-dialog/add-document-dialog.component';
 import { EditMetadataDialogComponent } from '../edit-metadata-dialog/edit-metadata-dialog.component';
@@ -21,40 +23,16 @@ import { MatDialog } from '@angular/material/dialog';
 import { DocumentRow } from '../document-row.model';
 import { SelectionModel } from '@angular/cdk/collections';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { DocumentsPageDataService } from '../documents-page-data.service';
+import { TEXT_FILTER_MAX_SCAN, metadataStringForMatch } from '../document-text-filter.util';
+import { escapeHtml, highlightHtml } from '../document-highlight.util';
 
 const PAGE_SIZE = 25;
-const TEXT_FILTER_BATCH = 500;
-/** Stop scanning after this many records (avoids freezing huge collections). */
-const TEXT_FILTER_MAX_SCAN = 100_000;
-
-function escapeHtml(s: string): string {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
-
-/** Case-insensitive highlight; `needle` must be non-empty. */
-function highlightHtml(text: string, needle: string): string {
-  const n = needle.trim();
-  if (!n) return escapeHtml(text);
-  const lowerText = text.toLowerCase();
-  const lowerNeedle = n.toLowerCase();
-  let out = '';
-  let start = 0;
-  while (true) {
-    const idx = lowerText.indexOf(lowerNeedle, start);
-    if (idx < 0) {
-      out += escapeHtml(text.slice(start));
-      break;
-    }
-    out += escapeHtml(text.slice(start, idx));
-    out += '<mark class="text-filter-hit">' + escapeHtml(text.slice(idx, idx + n.length)) + '</mark>';
-    start = idx + n.length;
-  }
-  return out;
-}
 
 @Component({
   selector: 'app-documents-page',
   standalone: true,
+  providers: [DocumentsPageDataService],
   imports: [
     RouterLink,
     MatCardModule,
@@ -74,10 +52,19 @@ function highlightHtml(text: string, needle: string): string {
 export class DocumentsPageComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private chroma = inject(ChromaApiService);
+  private docsData = inject(DocumentsPageDataService);
   private dialog = inject(MatDialog);
   private snackBar = inject(MatSnackBar);
   private errorLog = inject(ErrorLogService);
   private sanitizer = inject(DomSanitizer);
+  private destroyRef = inject(DestroyRef);
+
+  /** Cancel overlapping list loads when the user changes page quickly. */
+  private listLoadSub: Subscription | undefined;
+  /** Cancel an in-progress text-filter scan when starting another or leaving. */
+  private textScanSub: Subscription | undefined;
+  /** Cancel overlapping semantic search. */
+  private searchSub: Subscription | undefined;
 
   /** Full result set when a text filter is applied (client-side pagination). */
   private filteredRowsCache: DocumentRow[] = [];
@@ -95,9 +82,7 @@ export class DocumentsPageComponent implements OnInit {
   protected pageSize = PAGE_SIZE;
   protected searchQuery = signal('');
   protected searchMode = signal<'list' | 'search'>('list');
-  /** Value in the text-filter input before Apply. */
   protected textFilterDraft = signal('');
-  /** Applied substring (case-insensitive); highlights and drives matching. */
   protected appliedTextFilter = signal('');
 
   protected paginatorLength = computed(() => {
@@ -107,7 +92,6 @@ export class DocumentsPageComponent implements OnInit {
 
   protected totalPages = computed(() => Math.max(1, Math.ceil(this.paginatorLength() / this.pageSize)));
 
-  /** 1-based page number shown in the jump field; kept in sync when `pageIndex` changes. */
   protected pageJumpInput = signal('1');
 
   constructor() {
@@ -120,15 +104,17 @@ export class DocumentsPageComponent implements OnInit {
     const id = this.route.snapshot.paramMap.get('collectionId');
     if (!id) return;
     this.collectionId.set(id);
-    this.chroma.listCollections(500, 0).subscribe({
-      next: (list) => {
-        const c = list.find((x) => x.id === id);
-        if (c) {
-          this.collectionName.set(c.name);
-          this.dimension.set(c.dimension ?? null);
-        }
-      },
-    });
+    this.docsData
+      .loadCollectionMeta(id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (meta) => {
+          if (meta) {
+            this.collectionName.set(meta.name);
+            this.dimension.set(meta.dimension);
+          }
+        },
+      });
     this.loadPage(0);
   }
 
@@ -145,7 +131,6 @@ export class DocumentsPageComponent implements OnInit {
     return this.appliedTextFilter().trim().length > 0;
   }
 
-  /** Highlight only on the list view; semantic search rows ignore the text filter. */
   protected showTextFilterHighlight(): boolean {
     return this.searchMode() === 'list' && this.hasTextFilter();
   }
@@ -171,7 +156,6 @@ export class DocumentsPageComponent implements OnInit {
     this.loadPage(0);
   }
 
-  /** Safe HTML for table cells when substring filter is active. */
   protected cellHtml(text: string | null, maxLen: number): SafeHtml {
     const t = text ?? '';
     const display = maxLen > 0 && t.length > maxLen ? t.slice(0, maxLen) + '…' : t;
@@ -210,28 +194,22 @@ export class DocumentsPageComponent implements OnInit {
       return;
     }
     this.loading.set(true);
-    const limit = this.pageSize;
-    const offset = pageIndex * limit;
-    this.chroma
-      .getRecords(cid, {
-        where: { $and: [] },
-        include: ['documents', 'metadatas', 'embeddings'],
-        limit,
-        offset,
+    this.listLoadSub?.unsubscribe();
+    this.listLoadSub = this.docsData
+      .loadDocumentsListPage({
+        collectionId: cid,
+        pageIndex,
+        pageSize: this.pageSize,
+        fetchTotalCount: this.searchMode() === 'list',
       })
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (res) => {
-          this.applyGetResponse(res, pageIndex);
-          if (this.searchMode() === 'list') {
-            this.chroma.countRecords(cid).subscribe({
-              next: (r: { count?: number; total?: number } | number) => {
-                const count =
-                  typeof r === 'number' ? r : (typeof (r as { count?: number }).count === 'number' ? (r as { count: number }).count : (r as { total?: number }).total);
-                if (typeof count === 'number' && count >= 0) this.totalEstimate.set(count);
-              },
-              error: () => {},
-            });
-          }
+        next: (result) => {
+          this.dataSource.data = result.rows;
+          this.totalEstimate.set(
+            result.countedTotal !== undefined ? result.countedTotal : result.interimTotal
+          );
+          this.loading.set(false);
         },
         error: (err) => {
           this.loading.set(false);
@@ -242,60 +220,10 @@ export class DocumentsPageComponent implements OnInit {
       });
   }
 
-  private rowHaystack(row: DocumentRow): string {
-    const parts = [row.id, row.document ?? '', this.formatMetadata(row.metadata), row.embeddingPreview ?? ''];
-    return parts.join('\u0001').toLowerCase();
-  }
-
-  private rowMatchesNeedle(row: DocumentRow, needleLower: string): boolean {
-    return this.rowHaystack(row).includes(needleLower);
-  }
-
-  private mapResponseToRows(res: GetRecordsResponse): DocumentRow[] {
-    const ids = res.ids ?? [];
-    const docs = res.documents ?? [];
-    const metas = res.metadatas ?? [];
-    const embs = res.embeddings ?? [];
-    return ids.map((id, i) => {
-      const v = embs[i];
-      let preview: string | null = null;
-      let embedding: number[] | null = null;
-      if (v && Array.isArray(v)) {
-        const first = Array.isArray(v[0]) ? (v[0] as number[]) : (v as unknown as number[]);
-        if (first.length) {
-          embedding = first;
-          const norm = Math.sqrt(first.reduce((sum, x) => sum + x * x, 0));
-          preview = `[${first.slice(0, 3).map((x) => x.toFixed(3)).join(', ')}…] ‖v‖≈${norm.toFixed(2)}`;
-        }
-      }
-      return {
-        id,
-        document: docs[i] ?? null,
-        metadata: metas[i] ?? null,
-        embeddingPreview: preview,
-        embedding,
-      };
-    });
-  }
-
   private applyFilteredPageSlice(pageIndex: number): void {
     const start = pageIndex * this.pageSize;
     this.dataSource.data = this.filteredRowsCache.slice(start, start + this.pageSize);
     this.loading.set(false);
-  }
-
-  private finishTextFilterScan(matches: DocumentRow[], truncated: boolean): void {
-    this.filteredRowsCache = matches;
-    this.totalEstimate.set(matches.length);
-    this.pageIndex.set(0);
-    this.applyFilteredPageSlice(0);
-    if (truncated) {
-      this.snackBar.open(
-        `Text filter: only the first ${TEXT_FILTER_MAX_SCAN.toLocaleString()} records were scanned. Refine the filter if needed.`,
-        'Close',
-        { duration: 8000 }
-      );
-    }
   }
 
   private runTextFilterScan(): void {
@@ -304,48 +232,31 @@ export class DocumentsPageComponent implements OnInit {
     if (!cid || !needle) return;
     const needleLower = needle.toLowerCase();
     this.loading.set(true);
-    const matches: DocumentRow[] = [];
-    let offset = 0;
-
-    const fetchNext = (): void => {
-      const limit = Math.min(TEXT_FILTER_BATCH, TEXT_FILTER_MAX_SCAN - offset);
-      if (limit <= 0) {
-        this.finishTextFilterScan(matches, true);
-        return;
-      }
-      this.chroma
-        .getRecords(cid, {
-          where: { $and: [] },
-          include: ['documents', 'metadatas', 'embeddings'],
-          limit,
-          offset,
-        })
-        .subscribe({
-          next: (res) => {
-            const rows = this.mapResponseToRows(res);
-            for (const row of rows) {
-              if (this.rowMatchesNeedle(row, needleLower)) matches.push(row);
-            }
-            offset += rows.length;
-            const fullBatch = rows.length === limit;
-            if (fullBatch && offset < TEXT_FILTER_MAX_SCAN) {
-              fetchNext();
-            } else if (fullBatch && offset >= TEXT_FILTER_MAX_SCAN) {
-              this.finishTextFilterScan(matches, true);
-            } else {
-              this.finishTextFilterScan(matches, false);
-            }
-          },
-          error: (err) => {
-            this.loading.set(false);
-            const { message, detail, hint } = ErrorLogService.messageFromError(err);
-            this.errorLog.push(`Text filter: ${message}`, detail, hint);
-            this.snackBar.open('Failed to scan collection', 'Close', { duration: 5000 });
-          },
-        });
-    };
-
-    fetchNext();
+    this.textScanSub?.unsubscribe();
+    this.textScanSub = this.docsData
+      .scanForTextFilter(cid, needleLower)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: ({ matches, truncated }) => {
+          this.filteredRowsCache = matches;
+          this.totalEstimate.set(matches.length);
+          this.pageIndex.set(0);
+          this.applyFilteredPageSlice(0);
+          if (truncated) {
+            this.snackBar.open(
+              `Text filter: only the first ${TEXT_FILTER_MAX_SCAN.toLocaleString()} records were scanned. Refine the filter if needed.`,
+              'Close',
+              { duration: 8000 }
+            );
+          }
+        },
+        error: (err) => {
+          this.loading.set(false);
+          const { message, detail, hint } = ErrorLogService.messageFromError(err);
+          this.errorLog.push(`Text filter: ${message}`, detail, hint);
+          this.snackBar.open('Failed to scan collection', 'Close', { duration: 5000 });
+        },
+      });
   }
 
   private refreshListAfterMutation(): void {
@@ -356,41 +267,18 @@ export class DocumentsPageComponent implements OnInit {
     }
   }
 
-  private applyGetResponse(res: GetRecordsResponse, pageIndex: number): void {
-    const rows = this.mapResponseToRows(res);
-    this.dataSource.data = rows;
-    const loaded = pageIndex * this.pageSize + rows.length;
-    const total = Math.max(loaded, rows.length > 0 ? loaded : 0);
-    this.totalEstimate.set(total >= 0 ? total : this.pageSize);
-    this.loading.set(false);
-  }
-
   protected runSearch(): void {
     const cid = this.collectionId();
     const q = this.searchQuery().trim();
     if (!cid || !q) return;
     this.searchMode.set('search');
     this.loading.set(true);
-    this.chroma
-      .queryCollection(
-        cid,
-        {
-          query_texts: [q],
-          n_results: 25,
-          include: ['documents', 'metadatas', 'distances'],
-        }
-      )
+    this.searchSub?.unsubscribe();
+    this.searchSub = this.docsData
+      .querySemanticSearch(cid, q)
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (res) => {
-          const ids = res.ids?.[0] ?? [];
-          const docs = res.documents?.[0] ?? [];
-          const metas = res.metadatas?.[0] ?? [];
-          const rows: DocumentRow[] = ids.map((id, i) => ({
-              id,
-              document: docs[i] ?? null,
-              metadata: metas[i] ?? null,
-              embeddingPreview: null,
-            }));
+        next: (rows) => {
           this.dataSource.data = rows;
           this.loading.set(false);
         },
@@ -436,33 +324,36 @@ export class DocumentsPageComponent implements OnInit {
     const ids = this.selection.selected.map((r) => r.id);
     if (!ids.length) return;
     this.loading.set(true);
-    this.chroma.deleteRecords(cid, { ids }).subscribe({
-      next: () => {
-        this.snackBar.open(`Deleted ${ids.length} documents`, 'Close', { duration: 4000 });
-        this.selection.clear();
-        if (this.hasTextFilter()) {
-          const idSet = new Set(ids);
-          this.filteredRowsCache = this.filteredRowsCache.filter((r) => !idSet.has(r.id));
-          this.totalEstimate.set(this.filteredRowsCache.length);
-          let pi = this.pageIndex();
-          const maxPi = Math.max(0, Math.ceil(this.filteredRowsCache.length / this.pageSize) - 1);
-          if (pi > maxPi) {
-            pi = maxPi;
-            this.pageIndex.set(pi);
+    this.chroma
+      .deleteRecords(cid, { ids })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.snackBar.open(`Deleted ${ids.length} documents`, 'Close', { duration: 4000 });
+          this.selection.clear();
+          if (this.hasTextFilter()) {
+            const idSet = new Set(ids);
+            this.filteredRowsCache = this.filteredRowsCache.filter((r) => !idSet.has(r.id));
+            this.totalEstimate.set(this.filteredRowsCache.length);
+            let pi = this.pageIndex();
+            const maxPi = Math.max(0, Math.ceil(this.filteredRowsCache.length / this.pageSize) - 1);
+            if (pi > maxPi) {
+              pi = maxPi;
+              this.pageIndex.set(pi);
+            }
+            this.applyFilteredPageSlice(pi);
+            this.loading.set(false);
+          } else {
+            this.loadPage(this.pageIndex());
           }
-          this.applyFilteredPageSlice(pi);
+        },
+        error: (err) => {
           this.loading.set(false);
-        } else {
-          this.loadPage(this.pageIndex());
-        }
-      },
-      error: (err) => {
-        this.loading.set(false);
-        const { message, detail, hint } = ErrorLogService.messageFromError(err);
-        this.errorLog.push(`Bulk delete: ${message}`, detail, hint);
-        this.snackBar.open('Bulk delete failed', 'Close', { duration: 5000 });
-      },
-    });
+          const { message, detail, hint } = ErrorLogService.messageFromError(err);
+          this.errorLog.push(`Bulk delete: ${message}`, detail, hint);
+          this.snackBar.open('Bulk delete failed', 'Close', { duration: 5000 });
+        },
+      });
   }
 
   protected openAddDialog(): void {
@@ -473,9 +364,12 @@ export class DocumentsPageComponent implements OnInit {
       width: '520px',
       data: { collectionId: cid, dimension: dim },
     });
-    ref.afterClosed().subscribe((added) => {
-      if (added) this.refreshListAfterMutation();
-    });
+    ref
+      .afterClosed()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((added) => {
+        if (added) this.refreshListAfterMutation();
+      });
   }
 
   protected openEditMetadataDialog(row: DocumentRow): void {
@@ -485,9 +379,12 @@ export class DocumentsPageComponent implements OnInit {
       width: '520px',
       data: { collectionId: cid, documentRow: row, dimension: this.dimension() },
     });
-    ref.afterClosed().subscribe((updated) => {
-      if (updated) this.refreshListAfterMutation();
-    });
+    ref
+      .afterClosed()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((updated) => {
+        if (updated) this.refreshListAfterMutation();
+      });
   }
 
   protected copyId(id: string, event?: Event): void {
@@ -513,14 +410,16 @@ export class DocumentsPageComponent implements OnInit {
       width: '400px',
       data: { collectionId: cid, documentRow: row },
     });
-    ref.afterClosed().subscribe((deleted) => {
-      if (deleted) this.refreshListAfterMutation();
-    });
+    ref
+      .afterClosed()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((deleted) => {
+        if (deleted) this.refreshListAfterMutation();
+      });
   }
 
   protected formatMetadata(meta: Record<string, unknown> | null): string {
-    if (!meta || typeof meta !== 'object') return '—';
-    return JSON.stringify(meta);
+    return metadataStringForMatch(meta);
   }
 
   protected truncate(text: string | null, max = 80): string {
