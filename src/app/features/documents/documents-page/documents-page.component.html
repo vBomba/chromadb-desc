@@ -123,14 +123,33 @@
         </button>
       </div>
       @if (searchMode() === 'list') {
-        <mat-paginator
-          [length]="paginatorLength()"
-          [pageSize]="pageSize"
-          [pageIndex]="pageIndex()"
-          (page)="onPage($event)"
-          [hidePageSize]="true"
-        >
-        </mat-paginator>
+        <div class="paginator-row">
+          <mat-paginator
+            class="paginator-main"
+            [length]="paginatorLength()"
+            [pageSize]="pageSize"
+            [pageIndex]="pageIndex()"
+            (page)="onPage($event)"
+            [hidePageSize]="true"
+          >
+          </mat-paginator>
+          <div class="page-jump">
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" class="page-jump-field">
+              <mat-label>Page</mat-label>
+              <input
+                matInput
+                type="number"
+                [min]="1"
+                [max]="totalPages()"
+                [value]="pageJumpInput()"
+                (input)="pageJumpInput.set($any($event.target).value)"
+                (keydown.enter)="goToJumpPage(); $event.preventDefault()"
+                aria-label="Go to page number"
+              />
+            </mat-form-field>
+            <button mat-stroked-button type="button" (click)="goToJumpPage()">Go</button>
+          </div>
+        </div>
       }
     }
   </mat-card-content>

@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed, OnInit } from '@angular/core';
+import { Component, inject, signal, computed, effect, OnInit } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
@@ -70,6 +70,17 @@ export class DocumentsPageComponent implements OnInit {
     return typeof t === 'number' && t >= 0 ? t : this.pageSize;
   });
 
+  protected totalPages = computed(() => Math.max(1, Math.ceil(this.paginatorLength() / this.pageSize)));
+
+  /** 1-based page number shown in the jump field; kept in sync when `pageIndex` changes. */
+  protected pageJumpInput = signal('1');
+
+  constructor() {
+    effect(() => {
+      this.pageJumpInput.set(String(this.pageIndex() + 1));
+    });
+  }
+
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('collectionId');
     if (!id) return;
@@ -89,6 +100,24 @@ export class DocumentsPageComponent implements OnInit {
   protected onPage(event: PageEvent): void {
     this.pageIndex.set(event.pageIndex);
     this.loadPage(event.pageIndex);
+  }
+
+  protected goToJumpPage(): void {
+    const raw = this.pageJumpInput().trim();
+    const n = parseInt(raw, 10);
+    const max = this.totalPages();
+    if (!Number.isFinite(n) || n < 1) {
+      this.pageJumpInput.set(String(this.pageIndex() + 1));
+      return;
+    }
+    const pageOneBased = Math.min(Math.max(1, n), max);
+    const idx = pageOneBased - 1;
+    if (idx === this.pageIndex()) {
+      this.pageJumpInput.set(String(pageOneBased));
+      return;
+    }
+    this.pageIndex.set(idx);
+    this.loadPage(idx);
   }
 
   private loadPage(pageIndex: number): void {
