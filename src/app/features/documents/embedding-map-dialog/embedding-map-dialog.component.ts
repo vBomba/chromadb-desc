@@ -1,13 +1,38 @@
-import { AfterViewInit, Component, ElementRef, Inject, ViewChild } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import {
+  AfterViewInit,
+  ChangeDetectorRef,
+  Component,
+  ElementRef,
+  Inject,
+  OnInit,
+  ViewChild,
+  inject,
+  signal,
+} from '@angular/core';
+import { DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatSelectModule } from '@angular/material/select';
 import { DocumentRow } from '../document-row.model';
 import { DocumentDetailDialogComponent } from '../document-detail-dialog/document-detail-dialog.component';
+import { pca2DScores } from '../embedding-pca.util';
+import { cosineDistance } from '../embedding-similarity.util';
+import { mapGetRecordsResponseToRows } from '../document-row.mapper';
+import { ChromaApiService } from '../../../core/services/chroma-api.service';
+import { ErrorLogService } from '../../../core/services/error-log.service';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+
+export type EmbeddingMapSourceMode = 'page' | 'sample100';
 
 export interface EmbeddingMapDialogData {
   rows: DocumentRow[];
   title: string;
+  collectionId: string;
 }
 
 interface Point2D {
@@ -19,12 +44,45 @@ interface Point2D {
 @Component({
   selector: 'app-embedding-map-dialog',
   standalone: true,
-  imports: [MatDialogModule, MatButtonModule, MatIconModule],
+  imports: [
+    CommonModule,
+    MatDialogModule,
+    MatButtonModule,
+    MatIconModule,
+    MatProgressSpinnerModule,
+    MatFormFieldModule,
+    MatSelectModule,
+    MatSnackBarModule,
+  ],
   templateUrl: './embedding-map-dialog.component.html',
   styleUrl: './embedding-map-dialog.component.scss',
 })
-export class EmbeddingMapDialogComponent implements AfterViewInit {
+export class EmbeddingMapDialogComponent implements OnInit, AfterViewInit {
   @ViewChild('canvas', { static: false }) canvasRef?: ElementRef<HTMLCanvasElement>;
+
+  private chroma = inject(ChromaApiService);
+  private snackBar = inject(MatSnackBar);
+  private errorLog = inject(ErrorLogService);
+  private cdr = inject(ChangeDetectorRef);
+  private destroyRef = inject(DestroyRef);
+
+  /** Rows currently plotted (page or fetched sample). */
+  protected viewRows: DocumentRow[] = [];
+
+  protected sourceMode = signal<EmbeddingMapSourceMode>('page');
+  protected loadingSample = signal(false);
+  protected neighborsLoading = signal(false);
+  protected hoverTip = signal<{ left: number; top: number; text: string } | null>(null);
+
+  /** Neighbor IDs from Chroma `query` (collection-wide). */
+  protected collectionNeighborIds = new Set<string>();
+  /** Same query, with distances when API returns them. */
+  protected collectionNeighbors: { id: string; distance: number | null }[] = [];
+  /** Fallback: cosine neighbors among `viewRows` only. */
+  protected localNeighborIds = new Set<string>();
+
+  private points: Point2D[] = [];
+  private selected: Point2D | null = null;
 
   constructor(
     private dialogRef: MatDialogRef<EmbeddingMapDialogComponent>,
@@ -32,20 +90,66 @@ export class EmbeddingMapDialogComponent implements AfterViewInit {
     private dialog: MatDialog
   ) {}
 
-  private points: Point2D[] = [];
-  private selected: Point2D | null = null;
-  private neighborIds = new Set<string>();
+  ngOnInit(): void {
+    this.viewRows = [...this.data.rows];
+  }
 
   get hasEmbeddings(): boolean {
-    return this.data.rows.some((r) => Array.isArray(r.embedding) && r.embedding.length);
+    return this.viewRows.some((r) => Array.isArray(r.embedding) && r.embedding.length);
   }
 
   ngAfterViewInit(): void {
     if (!this.hasEmbeddings) return;
-    // Defer until after dialog is laid out so canvas is in DOM with correct dimensions
     requestAnimationFrame(() => {
       requestAnimationFrame(() => this.draw());
     });
+  }
+
+  protected onSourceModeChange(mode: EmbeddingMapSourceMode): void {
+    this.sourceMode.set(mode);
+    this.selected = null;
+    this.collectionNeighborIds.clear();
+    this.collectionNeighbors = [];
+    this.localNeighborIds.clear();
+    this.hoverTip.set(null);
+    if (mode === 'page') {
+      this.viewRows = [...this.data.rows];
+      this.loadingSample.set(false);
+      this.cdr.markForCheck();
+      requestAnimationFrame(() => this.draw());
+      return;
+    }
+    this.loadingSample.set(true);
+    this.cdr.markForCheck();
+    this.chroma
+      .getRecords(this.data.collectionId, {
+        where: { $and: [] },
+        include: ['documents', 'metadatas', 'embeddings'],
+        limit: 100,
+        offset: 0,
+      })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (res) => {
+          const rows = mapGetRecordsResponseToRows(res).filter(
+            (r) => Array.isArray(r.embedding) && r.embedding.length > 0
+          );
+          this.viewRows = rows.length ? rows : [...this.data.rows];
+          this.loadingSample.set(false);
+          if (!rows.length) {
+            this.snackBar.open('No embeddings in the first 100 records', 'Close', { duration: 4000 });
+          }
+          this.cdr.markForCheck();
+          requestAnimationFrame(() => this.draw());
+        },
+        error: (err) => {
+          this.loadingSample.set(false);
+          const { message, detail, hint } = ErrorLogService.messageFromError(err);
+          this.errorLog.push(`Embedding map sample: ${message}`, detail, hint);
+          this.snackBar.open('Failed to load sample', 'Close', { duration: 5000 });
+          this.cdr.markForCheck();
+        },
+      });
   }
 
   private draw(): void {
@@ -58,13 +162,12 @@ export class EmbeddingMapDialogComponent implements AfterViewInit {
     const h = canvas.height;
     if (w < 10 || h < 10) return;
 
-    // Use fixed visible colors so canvas is never black and points are always visible
     const bg = '#f5f5f5';
     const primary = '#1976d2';
-    const secondary = '#ed6c02';
-    const neighbor = '#5c6bc0';
+    const selectedColor = '#ed6c02';
+    const neighborColor = '#5c6bc0';
 
-    const rowsWithEmb = this.data.rows.filter((r) => Array.isArray(r.embedding) && r.embedding.length > 0);
+    const rowsWithEmb = this.viewRows.filter((r) => Array.isArray(r.embedding) && r.embedding.length > 0);
     if (!rowsWithEmb.length) {
       ctx.fillStyle = bg;
       ctx.fillRect(0, 0, w, h);
@@ -72,7 +175,7 @@ export class EmbeddingMapDialogComponent implements AfterViewInit {
     }
 
     const embeddings = rowsWithEmb.map((r) => this.normalizeEmbedding(r.embedding!));
-    const projected = this.projectTo2D(embeddings);
+    const projected = pca2DScores(embeddings);
     if (!projected.length) {
       ctx.fillStyle = bg;
       ctx.fillRect(0, 0, w, h);
@@ -111,9 +214,9 @@ export class EmbeddingMapDialogComponent implements AfterViewInit {
     for (const p of this.points) {
       let color = primary;
       if (this.selected && p.row.id === this.selected.row.id) {
-        color = secondary;
-      } else if (this.neighborIds.has(p.row.id)) {
-        color = neighbor;
+        color = selectedColor;
+      } else if (this.collectionNeighborIds.has(p.row.id) || this.localNeighborIds.has(p.row.id)) {
+        color = neighborColor;
       }
       ctx.fillStyle = color;
       ctx.beginPath();
@@ -122,7 +225,6 @@ export class EmbeddingMapDialogComponent implements AfterViewInit {
     }
   }
 
-  /** Ensure embedding is a flat number[] (API may return nested array). */
   private normalizeEmbedding(v: number[] | number[][]): number[] {
     if (!Array.isArray(v) || !v.length) return [];
     const first = v[0];
@@ -131,36 +233,59 @@ export class EmbeddingMapDialogComponent implements AfterViewInit {
     return [];
   }
 
-  // Simple deterministic random projection from high-D to 2D
-  private projectTo2D(vectors: number[][]): [number, number][] {
-    if (!vectors.length) return [];
-    const dim = vectors[0].length;
-    const axis1: number[] = [];
-    const axis2: number[] = [];
-    for (let i = 0; i < dim; i++) {
-      const t1 = Math.sin(i * 12.9898 + 78.233);
-      const t2 = Math.sin(i * 93.9898 + 41.233);
-      axis1.push(t1);
-      axis2.push(t2);
-    }
-    const norm = (v: number[]) =>
-      Math.sqrt(v.reduce((sum, x) => sum + x * x, 0)) || 1;
-    const n1 = norm(axis1);
-    const n2 = norm(axis2);
-    const a1 = axis1.map((x) => x / n1);
-    const a2 = axis2.map((x) => x / n2);
-
-    const dot = (u: number[], v: number[]) => u.reduce((sum, x, i) => sum + x * v[i], 0);
-
-    return vectors.map((v) => [dot(v, a1), dot(v, a2)]);
-  }
-
   close(): void {
     this.dialogRef.close();
   }
 
   onCanvasClick(event: MouseEvent): void {
     if (!this.canvasRef || !this.points.length) return;
+    const closest = this.hitTest(event);
+    if (!closest) return;
+
+    this.selected = closest;
+    this.collectionNeighborIds.clear();
+    this.collectionNeighbors = [];
+    this.localNeighborIds.clear();
+    this.updateLocalCosineNeighbors(closest);
+    this.draw();
+    this.cdr.markForCheck();
+
+    this.dialog.open(DocumentDetailDialogComponent, {
+      width: '560px',
+      maxWidth: '95vw',
+      data: { row: closest.row },
+    });
+
+    this.fetchCollectionNeighbors(closest.row);
+  }
+
+  onCanvasMove(event: MouseEvent): void {
+    if (!this.canvasRef || !this.points.length) {
+      this.hoverTip.set(null);
+      return;
+    }
+    const wrap = this.canvasRef.nativeElement.parentElement;
+    if (!wrap) return;
+
+    const hit = this.hitTest(event, 14);
+    if (!hit) {
+      this.hoverTip.set(null);
+      return;
+    }
+    const rect = wrap.getBoundingClientRect();
+    const doc = hit.row.document?.slice(0, 120) ?? '';
+    const text = doc ? `${hit.row.id}\n${doc}${hit.row.document && hit.row.document.length > 120 ? '…' : ''}` : hit.row.id;
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    this.hoverTip.set({ left: Math.min(x + 12, rect.width - 200), top: y - 8, text });
+  }
+
+  onCanvasLeave(): void {
+    this.hoverTip.set(null);
+  }
+
+  private hitTest(event: MouseEvent, radius = 15): Point2D | null {
+    if (!this.canvasRef) return null;
     const canvas = this.canvasRef.nativeElement;
     const rect = canvas.getBoundingClientRect();
     const scaleX = canvas.width / rect.width;
@@ -169,6 +294,7 @@ export class EmbeddingMapDialogComponent implements AfterViewInit {
     const y = (event.clientY - rect.top) * scaleY;
     let closest: Point2D | null = null;
     let minDist = Infinity;
+    const radius2 = radius * radius;
     for (const p of this.points) {
       const dx = p.x - x;
       const dy = p.y - y;
@@ -178,47 +304,63 @@ export class EmbeddingMapDialogComponent implements AfterViewInit {
         closest = p;
       }
     }
-    const radius2 = 15 * 15;
-    if (!closest || minDist > radius2) return;
-
-    this.selected = closest;
-    this.updateNeighbors();
-    this.draw();
-
-    this.dialog.open(DocumentDetailDialogComponent, {
-      width: '560px',
-      maxWidth: '95vw',
-      data: { row: closest.row },
-    });
+    if (!closest || minDist > radius2) return null;
+    return closest;
   }
 
-  private updateNeighbors(): void {
-    this.neighborIds.clear();
-    if (!this.selected || !this.selected.row.embedding) return;
-    const target = this.normalizeEmbedding(this.selected.row.embedding);
+  private updateLocalCosineNeighbors(closest: Point2D): void {
+    const target = this.normalizeEmbedding(closest.row.embedding!);
     if (!target.length) return;
-    const rows = this.data.rows.filter((r) => Array.isArray(r.embedding) && r.embedding && r.embedding.length);
-    const distances = rows
-      .filter((r) => r.id !== this.selected!.row.id)
+    const rows = this.viewRows.filter((r) => Array.isArray(r.embedding) && r.embedding.length);
+    const ranked = rows
+      .filter((r) => r.id !== closest.row.id)
       .map((r) => ({
         id: r.id,
-        d2: this.squaredDistance(target, this.normalizeEmbedding(r.embedding!)),
+        d: cosineDistance(target, this.normalizeEmbedding(r.embedding!)),
       }))
-      .sort((a, b) => a.d2 - b.d2)
+      .sort((a, b) => a.d - b.d)
       .slice(0, 8);
-    for (const item of distances) {
-      this.neighborIds.add(item.id);
-    }
+    this.localNeighborIds = new Set(ranked.map((x) => x.id));
   }
 
-  private squaredDistance(a: number[], b: number[]): number {
-    const len = Math.min(a.length, b.length);
-    let sum = 0;
-    for (let i = 0; i < len; i++) {
-      const diff = a[i] - b[i];
-      sum += diff * diff;
-    }
-    return sum;
+  private fetchCollectionNeighbors(row: DocumentRow): void {
+    const emb = this.normalizeEmbedding(row.embedding!);
+    if (!emb.length || !this.data.collectionId) return;
+
+    this.neighborsLoading.set(true);
+    this.cdr.markForCheck();
+
+    this.chroma
+      .queryCollection(this.data.collectionId, {
+        query_embeddings: [emb],
+        n_results: 32,
+        include: ['documents', 'metadatas', 'distances'],
+      })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (res) => {
+          this.neighborsLoading.set(false);
+          const ids = res.ids?.[0] ?? [];
+          const dists = res.distances?.[0] ?? [];
+          const pairs = ids
+            .map((id, i) => ({ id, distance: dists[i] ?? null }))
+            .filter((p) => p.id !== row.id)
+            .slice(0, 32);
+          this.collectionNeighbors = pairs;
+          this.collectionNeighborIds = new Set(pairs.map((p) => p.id));
+          this.draw();
+          this.cdr.markForCheck();
+        },
+        error: (err) => {
+          this.neighborsLoading.set(false);
+          const { message, detail, hint } = ErrorLogService.messageFromError(err);
+          this.errorLog.push(`Embedding neighbors query: ${message}`, detail, hint);
+          this.snackBar.open('Could not load collection neighbors (using page only)', 'Close', {
+            duration: 5000,
+          });
+          this.cdr.markForCheck();
+        },
+      });
   }
+
 }
-

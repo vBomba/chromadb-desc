@@ -1,16 +1,69 @@
-<h2 mat-dialog-title>Embedding map</h2>
+<h2 mat-dialog-title>Embedding map — {{ data.title }}</h2>
 <mat-dialog-content class="map-content">
   @if (!hasEmbeddings) {
-    <p>No embeddings available for current page.</p>
+    <p>No embeddings available for the selected points.</p>
   } @else {
-    <canvas #canvas class="map-canvas" width="640" height="420" (click)="onCanvasClick($event)"></canvas>
+    <div class="toolbar">
+      <mat-form-field appearance="outline" class="source-field" subscriptSizing="dynamic">
+        <mat-label>Points on map</mat-label>
+        <mat-select [value]="sourceMode()" (selectionChange)="onSourceModeChange($event.value)">
+          <mat-option value="page">Current table page</mat-option>
+          <mat-option value="sample100">First 100 records (with embeddings)</mat-option>
+        </mat-select>
+      </mat-form-field>
+      @if (loadingSample()) {
+        <mat-spinner diameter="28" />
+      }
+      @if (neighborsLoading()) {
+        <span class="loading-neighbors">Loading collection neighbors…</span>
+      }
+    </div>
+
+    <div class="map-wrap">
+      <canvas
+        #canvas
+        class="map-canvas"
+        width="640"
+        height="420"
+        (click)="onCanvasClick($event)"
+        (mousemove)="onCanvasMove($event)"
+        (mouseleave)="onCanvasLeave()"
+      ></canvas>
+      @if (hoverTip(); as tip) {
+        <div class="tooltip" [style.left.px]="tip.left" [style.top.px]="tip.top">{{ tip.text }}</div>
+      }
+    </div>
+
+    <div class="legend">
+      <span class="lg"><span class="dot primary"></span> Point</span>
+      <span class="lg"><span class="dot selected"></span> Selected</span>
+      <span class="lg"><span class="dot neighbor"></span> Neighbor (map)</span>
+    </div>
+
     <p class="hint">
-      2D projection of embeddings for current page (approximate random projection). Click a point to open details;
-      its nearest neighbors are highlighted.
+      2D layout uses <strong>PCA</strong> on the Gram matrix (best-effort for few points). Distances on the plane are
+      not the same as in embedding space. After you click a point, <strong>Chroma query</strong> loads neighbors across
+      the whole collection; violet dots are neighbors that also appear on this map. Orange dots: cosine‑similar among
+      points on the map only (until the query returns).
     </p>
+
+    @if (collectionNeighbors.length) {
+      <div class="neighbor-panel">
+        <div class="neighbor-title">Neighbors (collection, by query)</div>
+        <ul class="neighbor-list">
+          @for (n of collectionNeighbors.slice(0, 20); track n.id) {
+            <li>
+              <code>{{ n.id }}</code>
+              @if (n.distance != null) {
+                <span class="dist">distance {{ n.distance | number: '1.0-4' }}</span>
+              }
+            </li>
+          }
+        </ul>
+      </div>
+    }
   }
 </mat-dialog-content>
 <mat-dialog-actions align="end">
   <button mat-flat-button (click)="close()">Close</button>
 </mat-dialog-actions>
-

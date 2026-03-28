@@ -436,12 +436,15 @@ export class DocumentsPageComponent implements OnInit {
       this.snackBar.open('No embeddings on current page', 'Close', { duration: 3000 });
       return;
     }
+    const cid = this.collectionId();
+    if (!cid) return;
     this.dialog.open(EmbeddingMapDialogComponent, {
       width: '720px',
       maxWidth: '95vw',
       data: {
         rows: this.dataSource.data,
         title: this.collectionName() || 'Documents',
+        collectionId: cid,
       },
     });
   }
