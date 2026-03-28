@@ -32,20 +32,24 @@ mat-card-header {
   }
 }
 
-.metadata-filters {
+.text-filter-bar {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 0.5rem;
   margin-bottom: 1rem;
 
-  .meta-key {
-    min-width: 160px;
-  }
-
-  .meta-value {
+  .text-filter-field {
     flex: 1;
     min-width: 220px;
   }
+}
+
+:host ::ng-deep mark.text-filter-hit {
+  background: color-mix(in srgb, var(--mat-sys-primary, #1976d2) 22%, transparent);
+  color: inherit;
+  padding: 0 0.05em;
+  border-radius: 2px;
 }
 
 .loading {

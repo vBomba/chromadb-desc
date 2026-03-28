@@ -27,27 +27,25 @@
         <button mat-button (click)="clearSearch()">Clear</button>
       }
     </div>
-    <div class="metadata-filters">
-      <mat-form-field appearance="outline" class="meta-key">
-        <mat-label>Metadata key</mat-label>
-        <input
-          matInput
-          [value]="metadataKey()"
-          (input)="metadataKey.set($any($event.target).value)"
-          placeholder="e.g. category"
-        />
-      </mat-form-field>
-      <mat-form-field appearance="outline" class="meta-value">
-        <mat-label>Metadata value (JSON or text)</mat-label>
-        <input
-          matInput
-          [value]="metadataValue()"
-          (input)="metadataValue.set($any($event.target).value)"
-          placeholder='"news"' 
-        />
-      </mat-form-field>
-      <button mat-button (click)="applyMetadataFilter()">Apply filter</button>
-    </div>
+    @if (searchMode() === 'list') {
+      <div class="text-filter-bar">
+        <mat-form-field appearance="outline" class="text-filter-field">
+          <mat-label>Filter by text</mat-label>
+          <input
+            matInput
+            [value]="textFilterDraft()"
+            (input)="textFilterDraft.set($any($event.target).value)"
+            (keydown.enter)="applyTextFilter()"
+            placeholder="ID, document, metadata, embedding preview…"
+            aria-label="Filter documents by substring"
+          />
+        </mat-form-field>
+        <button mat-flat-button color="primary" type="button" (click)="applyTextFilter()">Apply</button>
+        @if (appliedTextFilter().trim()) {
+          <button mat-button type="button" (click)="clearTextFilter()">Clear filter</button>
+        }
+      </div>
+    }
     @if (loading()) {
       <div class="loading">
         <mat-spinner diameter="32"></mat-spinner>
@@ -76,7 +74,16 @@
         <ng-container matColumnDef="id">
           <th mat-header-cell *matHeaderCellDef>ID</th>
           <td mat-cell *matCellDef="let row" class="id-cell-wrapper">
-            <code class="id-cell copyable" (click)="copyId(row.id, $event)" title="Copy ID">{{ row.id }}</code>
+            @if (showTextFilterHighlight()) {
+              <code
+                class="id-cell copyable"
+                (click)="copyId(row.id, $event)"
+                title="Copy ID"
+                [innerHTML]="cellHtml(row.id, 0)"
+              ></code>
+            } @else {
+              <code class="id-cell copyable" (click)="copyId(row.id, $event)" title="Copy ID">{{ row.id }}</code>
+            }
             <button mat-icon-button (click)="copyId(row.id, $event)" aria-label="Copy ID" class="copy-btn">
               <mat-icon>content_copy</mat-icon>
             </button>
@@ -84,18 +91,32 @@
         </ng-container>
         <ng-container matColumnDef="document">
           <th mat-header-cell *matHeaderCellDef>Document</th>
-          <td mat-cell *matCellDef="let row" [title]="row.document ?? ''">{{ truncate(row.document) }}</td>
+          <td mat-cell *matCellDef="let row" [title]="row.document ?? ''">
+            @if (showTextFilterHighlight()) {
+              <span [innerHTML]="cellHtml(row.document, 80)"></span>
+            } @else {
+              {{ truncate(row.document) }}
+            }
+          </td>
         </ng-container>
         <ng-container matColumnDef="metadata">
           <th mat-header-cell *matHeaderCellDef>Metadata</th>
           <td mat-cell *matCellDef="let row" [title]="formatMetadata(row.metadata)" class="meta-cell">
-            {{ truncate(formatMetadata(row.metadata), 60) }}
+            @if (showTextFilterHighlight()) {
+              <span [innerHTML]="cellHtml(formatMetadata(row.metadata), 60)"></span>
+            } @else {
+              {{ truncate(formatMetadata(row.metadata), 60) }}
+            }
           </td>
         </ng-container>
         <ng-container matColumnDef="embedding">
           <th mat-header-cell *matHeaderCellDef>Embedding</th>
           <td mat-cell *matCellDef="let row">
-            {{ row.embeddingPreview || '—' }}
+            @if (showTextFilterHighlight()) {
+              <span [innerHTML]="cellHtml(row.embeddingPreview ?? '—', 0)"></span>
+            } @else {
+              {{ row.embeddingPreview || '—' }}
+            }
           </td>
         </ng-container>
         <ng-container matColumnDef="actions">
@@ -113,7 +134,13 @@
         <tr mat-row *matRowDef="let row; columns: displayedColumns" (click)="openDetailDialog(row)" class="clickable-row"></tr>
         <tr class="mat-row" *matNoDataRow>
           <td class="mat-cell" [attr.colspan]="displayedColumns.length">
-            {{ searchMode() === 'search' ? 'No results.' : 'No documents.' }}
+            @if (searchMode() === 'search') {
+              No results.
+            } @else if (appliedTextFilter().trim()) {
+              No documents match this filter.
+            } @else {
+              No documents.
+            }
           </td>
         </tr>
       </table>

@@ -1,4 +1,5 @@
 import { Component, inject, signal, computed, effect, OnInit } from '@angular/core';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
@@ -22,6 +23,34 @@ import { SelectionModel } from '@angular/cdk/collections';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 
 const PAGE_SIZE = 25;
+const TEXT_FILTER_BATCH = 500;
+/** Stop scanning after this many records (avoids freezing huge collections). */
+const TEXT_FILTER_MAX_SCAN = 100_000;
+
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+/** Case-insensitive highlight; `needle` must be non-empty. */
+function highlightHtml(text: string, needle: string): string {
+  const n = needle.trim();
+  if (!n) return escapeHtml(text);
+  const lowerText = text.toLowerCase();
+  const lowerNeedle = n.toLowerCase();
+  let out = '';
+  let start = 0;
+  while (true) {
+    const idx = lowerText.indexOf(lowerNeedle, start);
+    if (idx < 0) {
+      out += escapeHtml(text.slice(start));
+      break;
+    }
+    out += escapeHtml(text.slice(start, idx));
+    out += '<mark class="text-filter-hit">' + escapeHtml(text.slice(idx, idx + n.length)) + '</mark>';
+    start = idx + n.length;
+  }
+  return out;
+}
 
 @Component({
   selector: 'app-documents-page',
@@ -48,6 +77,10 @@ export class DocumentsPageComponent implements OnInit {
   private dialog = inject(MatDialog);
   private snackBar = inject(MatSnackBar);
   private errorLog = inject(ErrorLogService);
+  private sanitizer = inject(DomSanitizer);
+
+  /** Full result set when a text filter is applied (client-side pagination). */
+  private filteredRowsCache: DocumentRow[] = [];
 
   protected collectionId = signal<string | null>(null);
   protected collectionName = signal<string>('');
@@ -62,8 +95,10 @@ export class DocumentsPageComponent implements OnInit {
   protected pageSize = PAGE_SIZE;
   protected searchQuery = signal('');
   protected searchMode = signal<'list' | 'search'>('list');
-  protected metadataKey = signal('');
-  protected metadataValue = signal('');
+  /** Value in the text-filter input before Apply. */
+  protected textFilterDraft = signal('');
+  /** Applied substring (case-insensitive); highlights and drives matching. */
+  protected appliedTextFilter = signal('');
 
   protected paginatorLength = computed(() => {
     const t = this.totalEstimate();
@@ -99,7 +134,50 @@ export class DocumentsPageComponent implements OnInit {
 
   protected onPage(event: PageEvent): void {
     this.pageIndex.set(event.pageIndex);
-    this.loadPage(event.pageIndex);
+    if (this.hasTextFilter()) {
+      this.applyFilteredPageSlice(event.pageIndex);
+    } else {
+      this.loadPage(event.pageIndex);
+    }
+  }
+
+  protected hasTextFilter(): boolean {
+    return this.appliedTextFilter().trim().length > 0;
+  }
+
+  /** Highlight only on the list view; semantic search rows ignore the text filter. */
+  protected showTextFilterHighlight(): boolean {
+    return this.searchMode() === 'list' && this.hasTextFilter();
+  }
+
+  protected applyTextFilter(): void {
+    const q = this.textFilterDraft().trim();
+    this.appliedTextFilter.set(q);
+    if (!q) {
+      this.filteredRowsCache = [];
+      this.pageIndex.set(0);
+      this.loadPage(0);
+      return;
+    }
+    this.pageIndex.set(0);
+    this.runTextFilterScan();
+  }
+
+  protected clearTextFilter(): void {
+    this.textFilterDraft.set('');
+    this.appliedTextFilter.set('');
+    this.filteredRowsCache = [];
+    this.pageIndex.set(0);
+    this.loadPage(0);
+  }
+
+  /** Safe HTML for table cells when substring filter is active. */
+  protected cellHtml(text: string | null, maxLen: number): SafeHtml {
+    const t = text ?? '';
+    const display = maxLen > 0 && t.length > maxLen ? t.slice(0, maxLen) + '…' : t;
+    const needle = this.appliedTextFilter().trim();
+    const html = needle ? highlightHtml(display, needle) : escapeHtml(display);
+    return this.sanitizer.bypassSecurityTrustHtml(html);
   }
 
   protected goToJumpPage(): void {
@@ -117,19 +195,26 @@ export class DocumentsPageComponent implements OnInit {
       return;
     }
     this.pageIndex.set(idx);
-    this.loadPage(idx);
+    if (this.hasTextFilter()) {
+      this.applyFilteredPageSlice(idx);
+    } else {
+      this.loadPage(idx);
+    }
   }
 
   private loadPage(pageIndex: number): void {
     const cid = this.collectionId();
     if (!cid) return;
+    if (this.hasTextFilter()) {
+      this.applyFilteredPageSlice(pageIndex);
+      return;
+    }
     this.loading.set(true);
     const limit = this.pageSize;
     const offset = pageIndex * limit;
-    const where = this.buildWhere();
     this.chroma
       .getRecords(cid, {
-        where,
+        where: { $and: [] },
         include: ['documents', 'metadatas', 'embeddings'],
         limit,
         offset,
@@ -137,7 +222,7 @@ export class DocumentsPageComponent implements OnInit {
       .subscribe({
         next: (res) => {
           this.applyGetResponse(res, pageIndex);
-          if (this.searchMode() === 'list' && !this.hasMetadataFilter()) {
+          if (this.searchMode() === 'list') {
             this.chroma.countRecords(cid).subscribe({
               next: (r: { count?: number; total?: number } | number) => {
                 const count =
@@ -157,16 +242,21 @@ export class DocumentsPageComponent implements OnInit {
       });
   }
 
-  private hasMetadataFilter(): boolean {
-    return this.metadataKey().trim().length > 0 && this.metadataValue().trim().length > 0;
+  private rowHaystack(row: DocumentRow): string {
+    const parts = [row.id, row.document ?? '', this.formatMetadata(row.metadata), row.embeddingPreview ?? ''];
+    return parts.join('\u0001').toLowerCase();
   }
 
-  private applyGetResponse(res: GetRecordsResponse, pageIndex: number): void {
+  private rowMatchesNeedle(row: DocumentRow, needleLower: string): boolean {
+    return this.rowHaystack(row).includes(needleLower);
+  }
+
+  private mapResponseToRows(res: GetRecordsResponse): DocumentRow[] {
     const ids = res.ids ?? [];
     const docs = res.documents ?? [];
     const metas = res.metadatas ?? [];
     const embs = res.embeddings ?? [];
-    const rows: DocumentRow[] = ids.map((id, i) => {
+    return ids.map((id, i) => {
       const v = embs[i];
       let preview: string | null = null;
       let embedding: number[] | null = null;
@@ -186,12 +276,91 @@ export class DocumentsPageComponent implements OnInit {
         embedding,
       };
     });
+  }
+
+  private applyFilteredPageSlice(pageIndex: number): void {
+    const start = pageIndex * this.pageSize;
+    this.dataSource.data = this.filteredRowsCache.slice(start, start + this.pageSize);
+    this.loading.set(false);
+  }
+
+  private finishTextFilterScan(matches: DocumentRow[], truncated: boolean): void {
+    this.filteredRowsCache = matches;
+    this.totalEstimate.set(matches.length);
+    this.pageIndex.set(0);
+    this.applyFilteredPageSlice(0);
+    if (truncated) {
+      this.snackBar.open(
+        `Text filter: only the first ${TEXT_FILTER_MAX_SCAN.toLocaleString()} records were scanned. Refine the filter if needed.`,
+        'Close',
+        { duration: 8000 }
+      );
+    }
+  }
+
+  private runTextFilterScan(): void {
+    const cid = this.collectionId();
+    const needle = this.appliedTextFilter().trim();
+    if (!cid || !needle) return;
+    const needleLower = needle.toLowerCase();
+    this.loading.set(true);
+    const matches: DocumentRow[] = [];
+    let offset = 0;
+
+    const fetchNext = (): void => {
+      const limit = Math.min(TEXT_FILTER_BATCH, TEXT_FILTER_MAX_SCAN - offset);
+      if (limit <= 0) {
+        this.finishTextFilterScan(matches, true);
+        return;
+      }
+      this.chroma
+        .getRecords(cid, {
+          where: { $and: [] },
+          include: ['documents', 'metadatas', 'embeddings'],
+          limit,
+          offset,
+        })
+        .subscribe({
+          next: (res) => {
+            const rows = this.mapResponseToRows(res);
+            for (const row of rows) {
+              if (this.rowMatchesNeedle(row, needleLower)) matches.push(row);
+            }
+            offset += rows.length;
+            const fullBatch = rows.length === limit;
+            if (fullBatch && offset < TEXT_FILTER_MAX_SCAN) {
+              fetchNext();
+            } else if (fullBatch && offset >= TEXT_FILTER_MAX_SCAN) {
+              this.finishTextFilterScan(matches, true);
+            } else {
+              this.finishTextFilterScan(matches, false);
+            }
+          },
+          error: (err) => {
+            this.loading.set(false);
+            const { message, detail, hint } = ErrorLogService.messageFromError(err);
+            this.errorLog.push(`Text filter: ${message}`, detail, hint);
+            this.snackBar.open('Failed to scan collection', 'Close', { duration: 5000 });
+          },
+        });
+    };
+
+    fetchNext();
+  }
+
+  private refreshListAfterMutation(): void {
+    if (this.hasTextFilter()) {
+      this.runTextFilterScan();
+    } else {
+      this.loadPage(this.pageIndex());
+    }
+  }
+
+  private applyGetResponse(res: GetRecordsResponse, pageIndex: number): void {
+    const rows = this.mapResponseToRows(res);
     this.dataSource.data = rows;
     const loaded = pageIndex * this.pageSize + rows.length;
-    const total =
-      this.hasMetadataFilter()
-        ? loaded + (rows.length >= this.pageSize ? 1 : 0)
-        : Math.max(loaded, rows.length > 0 ? loaded : 0);
+    const total = Math.max(loaded, rows.length > 0 ? loaded : 0);
     this.totalEstimate.set(total >= 0 ? total : this.pageSize);
     this.loading.set(false);
   }
@@ -238,7 +407,11 @@ export class DocumentsPageComponent implements OnInit {
     this.searchQuery.set('');
     this.searchMode.set('list');
     this.pageIndex.set(0);
-    this.loadPage(0);
+    if (this.hasTextFilter()) {
+      this.runTextFilterScan();
+    } else {
+      this.loadPage(0);
+    }
   }
 
   protected toggleAll(): void {
@@ -267,7 +440,21 @@ export class DocumentsPageComponent implements OnInit {
       next: () => {
         this.snackBar.open(`Deleted ${ids.length} documents`, 'Close', { duration: 4000 });
         this.selection.clear();
-        this.loadPage(this.pageIndex());
+        if (this.hasTextFilter()) {
+          const idSet = new Set(ids);
+          this.filteredRowsCache = this.filteredRowsCache.filter((r) => !idSet.has(r.id));
+          this.totalEstimate.set(this.filteredRowsCache.length);
+          let pi = this.pageIndex();
+          const maxPi = Math.max(0, Math.ceil(this.filteredRowsCache.length / this.pageSize) - 1);
+          if (pi > maxPi) {
+            pi = maxPi;
+            this.pageIndex.set(pi);
+          }
+          this.applyFilteredPageSlice(pi);
+          this.loading.set(false);
+        } else {
+          this.loadPage(this.pageIndex());
+        }
       },
       error: (err) => {
         this.loading.set(false);
@@ -276,26 +463,6 @@ export class DocumentsPageComponent implements OnInit {
         this.snackBar.open('Bulk delete failed', 'Close', { duration: 5000 });
       },
     });
-  }
-
-  protected applyMetadataFilter(): void {
-    this.pageIndex.set(0);
-    this.loadPage(0);
-  }
-
-  /** Build Chroma where clause. Empty filter must be { "$and": [] } (match all), not {}. */
-  private buildWhere(): unknown {
-    const key = this.metadataKey().trim();
-    const value = this.metadataValue().trim();
-    if (!key || !value) {
-      return { $and: [] };
-    }
-    try {
-      const parsed = JSON.parse(value);
-      return { [key]: { $eq: parsed } };
-    } catch {
-      return { [key]: { $eq: value } };
-    }
   }
 
   protected openAddDialog(): void {
@@ -307,7 +474,7 @@ export class DocumentsPageComponent implements OnInit {
       data: { collectionId: cid, dimension: dim },
     });
     ref.afterClosed().subscribe((added) => {
-      if (added) this.loadPage(this.pageIndex());
+      if (added) this.refreshListAfterMutation();
     });
   }
 
@@ -319,7 +486,7 @@ export class DocumentsPageComponent implements OnInit {
       data: { collectionId: cid, documentRow: row, dimension: this.dimension() },
     });
     ref.afterClosed().subscribe((updated) => {
-      if (updated) this.loadPage(this.pageIndex());
+      if (updated) this.refreshListAfterMutation();
     });
   }
 
@@ -347,7 +514,7 @@ export class DocumentsPageComponent implements OnInit {
       data: { collectionId: cid, documentRow: row },
     });
     ref.afterClosed().subscribe((deleted) => {
-      if (deleted) this.loadPage(this.pageIndex());
+      if (deleted) this.refreshListAfterMutation();
     });
   }
 
