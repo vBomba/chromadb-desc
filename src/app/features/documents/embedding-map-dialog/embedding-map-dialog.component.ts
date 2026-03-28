@@ -12,6 +12,7 @@ import {
 } from '@angular/core';
 import { DestroyRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Subscription } from 'rxjs';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -84,6 +85,10 @@ export class EmbeddingMapDialogComponent implements OnInit, AfterViewInit {
   private points: Point2D[] = [];
   private selected: Point2D | null = null;
 
+  /** Avoid overlapping HTTP when switching sample / clicking neighbors quickly. */
+  private sampleFetchSub: Subscription | undefined;
+  private neighborQuerySub: Subscription | undefined;
+
   constructor(
     private dialogRef: MatDialogRef<EmbeddingMapDialogComponent>,
     @Inject(MAT_DIALOG_DATA) public data: EmbeddingMapDialogData,
@@ -105,14 +110,18 @@ export class EmbeddingMapDialogComponent implements OnInit, AfterViewInit {
     });
   }
 
-  protected onSourceModeChange(mode: EmbeddingMapSourceMode): void {
-    this.sourceMode.set(mode);
+  protected onSourceModeChange(mode: string): void {
+    if (mode !== 'page' && mode !== 'sample100') return;
+    const typed = mode as EmbeddingMapSourceMode;
+    this.sourceMode.set(typed);
     this.selected = null;
     this.collectionNeighborIds.clear();
     this.collectionNeighbors = [];
     this.localNeighborIds.clear();
     this.hoverTip.set(null);
-    if (mode === 'page') {
+    if (typed === 'page') {
+      this.sampleFetchSub?.unsubscribe();
+      this.sampleFetchSub = undefined;
       this.viewRows = [...this.data.rows];
       this.loadingSample.set(false);
       this.cdr.markForCheck();
@@ -121,7 +130,8 @@ export class EmbeddingMapDialogComponent implements OnInit, AfterViewInit {
     }
     this.loadingSample.set(true);
     this.cdr.markForCheck();
-    this.chroma
+    this.sampleFetchSub?.unsubscribe();
+    this.sampleFetchSub = this.chroma
       .getRecords(this.data.collectionId, {
         where: { $and: [] },
         include: ['documents', 'metadatas', 'embeddings'],
@@ -136,6 +146,7 @@ export class EmbeddingMapDialogComponent implements OnInit, AfterViewInit {
           );
           this.viewRows = rows.length ? rows : [...this.data.rows];
           this.loadingSample.set(false);
+          this.sampleFetchSub = undefined;
           if (!rows.length) {
             this.snackBar.open('No embeddings in the first 100 records', 'Close', { duration: 4000 });
           }
@@ -144,6 +155,7 @@ export class EmbeddingMapDialogComponent implements OnInit, AfterViewInit {
         },
         error: (err) => {
           this.loadingSample.set(false);
+          this.sampleFetchSub = undefined;
           const { message, detail, hint } = ErrorLogService.messageFromError(err);
           this.errorLog.push(`Embedding map sample: ${message}`, detail, hint);
           this.snackBar.open('Failed to load sample', 'Close', { duration: 5000 });
@@ -330,7 +342,8 @@ export class EmbeddingMapDialogComponent implements OnInit, AfterViewInit {
     this.neighborsLoading.set(true);
     this.cdr.markForCheck();
 
-    this.chroma
+    this.neighborQuerySub?.unsubscribe();
+    this.neighborQuerySub = this.chroma
       .queryCollection(this.data.collectionId, {
         query_embeddings: [emb],
         n_results: 32,
@@ -340,6 +353,7 @@ export class EmbeddingMapDialogComponent implements OnInit, AfterViewInit {
       .subscribe({
         next: (res) => {
           this.neighborsLoading.set(false);
+          this.neighborQuerySub = undefined;
           const ids = res.ids?.[0] ?? [];
           const dists = res.distances?.[0] ?? [];
           const pairs = ids
@@ -348,11 +362,13 @@ export class EmbeddingMapDialogComponent implements OnInit, AfterViewInit {
             .slice(0, 32);
           this.collectionNeighbors = pairs;
           this.collectionNeighborIds = new Set(pairs.map((p) => p.id));
+          this.localNeighborIds.clear();
           this.draw();
           this.cdr.markForCheck();
         },
         error: (err) => {
           this.neighborsLoading.set(false);
+          this.neighborQuerySub = undefined;
           const { message, detail, hint } = ErrorLogService.messageFromError(err);
           this.errorLog.push(`Embedding neighbors query: ${message}`, detail, hint);
           this.snackBar.open('Could not load collection neighbors (using page only)', 'Close', {

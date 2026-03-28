@@ -84,6 +84,11 @@ export function pca2DScores(rows: number[][]): [number, number][] {
   if (rows.length === 0) return [];
   if (rows.length === 1) return [[0, 0]];
 
+  const d0 = rows[0].length;
+  if (!d0 || rows.some((r) => r.length !== d0)) {
+    return rows.map(() => [0, 0]);
+  }
+
   const X = centerRows(rows);
   const S = gramMatrix(X);
   const { lambda: lam1, v: v1 } = dominantEigenpair(S);
