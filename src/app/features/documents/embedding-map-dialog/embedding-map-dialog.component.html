@@ -37,22 +37,19 @@
     <div class="legend">
       <span class="lg"><span class="dot primary"></span> Point</span>
       <span class="lg"><span class="dot selected"></span> Selected</span>
-      <span class="lg"><span class="dot neighbor"></span> Neighbor (map)</span>
+      <span class="lg"><span class="dot neighbor"></span> Neighbor</span>
     </div>
-
-    <p class="hint">
-      2D layout uses <strong>PCA</strong> on the Gram matrix (best-effort for few points). Distances on the plane are
-      not the same as in embedding space. After you click a point, <strong>Chroma query</strong> loads neighbors across
-      the whole collection; violet dots are neighbors that also appear on this map. Orange dots: cosine‑similar among
-      points on the map only (until the query returns).
-    </p>
 
     @if (collectionNeighbors.length) {
       <div class="neighbor-panel">
         <div class="neighbor-title">Neighbors (collection, by query)</div>
         <ul class="neighbor-list">
           @for (n of collectionNeighbors.slice(0, 20); track n.id) {
-            <li>
+            <li
+              [class.row-hovered]="hoveredNeighborId() === n.id"
+              (mouseenter)="onNeighborRowEnter(n.id)"
+              (mouseleave)="onNeighborRowLeave()"
+            >
               <code>{{ n.id }}</code>
               @if (n.distance != null) {
                 <span class="dist">distance {{ n.distance | number: '1.0-4' }}</span>

@@ -76,7 +76,7 @@ export class DocumentsPageComponent implements OnInit {
   protected totalEstimate = signal<number>(0);
   protected dataSource = new MatTableDataSource<DocumentRow>([]);
   protected selection = new SelectionModel<DocumentRow>(true, []);
-  protected readonly displayedColumns = ['select', 'id', 'document', 'metadata', 'embedding', 'actions'];
+  protected readonly displayedColumns = ['select', 'id', 'document', 'metadata', 'actions'];
 
   protected pageIndex = signal(0);
   protected pageSize = PAGE_SIZE;
@@ -234,7 +234,7 @@ export class DocumentsPageComponent implements OnInit {
     this.loading.set(true);
     this.textScanSub?.unsubscribe();
     this.textScanSub = this.docsData
-      .scanForTextFilter(cid, needleLower)
+      .scanForTextFilter(cid, needle, needleLower)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: ({ matches, truncated }) => {

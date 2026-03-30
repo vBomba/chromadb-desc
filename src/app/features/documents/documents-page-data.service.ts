@@ -95,13 +95,20 @@ export class DocumentsPageDataService {
 
   /**
    * Sequential getRecords until filter cap or short batch; cancels in-flight HTTP when unsubscribed.
+   * Tries server-side `where_document.$contains` prefilter first, then still validates "all fields" locally.
    */
-  scanForTextFilter(collectionId: string, needleLower: string): Observable<TextFilterScanResult> {
+  scanForTextFilter(
+    collectionId: string,
+    needleRaw: string,
+    needleLower: string
+  ): Observable<TextFilterScanResult> {
     return new Observable<TextFilterScanResult>((subscriber: Subscriber<TextFilterScanResult>) => {
       const matches: DocumentRow[] = [];
       let offset = 0;
       let cancelled = false;
       let innerSub: Subscription | undefined;
+      let useServerDocumentPrefilter = true;
+      let retriedWithoutServerPrefilter = false;
 
       const finish = (truncated: boolean) => {
         if (cancelled || subscriber.closed) return;
@@ -124,6 +131,7 @@ export class DocumentsPageDataService {
         innerSub = this.chroma
           .getRecords(collectionId, {
             where: { $and: [] },
+            where_document: useServerDocumentPrefilter ? { $contains: needleRaw } : undefined,
             include: ['documents', 'metadatas', 'embeddings'],
             limit,
             offset,
@@ -142,10 +150,30 @@ export class DocumentsPageDataService {
               } else if (fullBatch && offset >= TEXT_FILTER_MAX_SCAN) {
                 finish(true);
               } else {
+                // If prefilter returned no local matches at all, retry once without prefilter
+                // because some Chroma deployments may handle where_document differently.
+                if (useServerDocumentPrefilter && !retriedWithoutServerPrefilter && matches.length === 0) {
+                  retriedWithoutServerPrefilter = true;
+                  useServerDocumentPrefilter = false;
+                  offset = 0;
+                  step();
+                  return;
+                }
                 finish(false);
               }
             },
-            error: (err) => fail(err),
+            error: (err) => {
+              // Some Chroma deployments may not support/allow where_document contains;
+              // retry once without server prefilter.
+              if (useServerDocumentPrefilter && offset === 0) {
+                useServerDocumentPrefilter = false;
+                offset = 0;
+                matches.length = 0;
+                step();
+                return;
+              }
+              fail(err);
+            },
           });
       };
 

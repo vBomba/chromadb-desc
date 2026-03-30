@@ -74,6 +74,7 @@ export class EmbeddingMapDialogComponent implements OnInit, AfterViewInit {
   protected loadingSample = signal(false);
   protected neighborsLoading = signal(false);
   protected hoverTip = signal<{ left: number; top: number; text: string } | null>(null);
+  protected hoveredNeighborId = signal<string | null>(null);
 
   /** Neighbor IDs from Chroma `query` (collection-wide). */
   protected collectionNeighborIds = new Set<string>();
@@ -119,6 +120,7 @@ export class EmbeddingMapDialogComponent implements OnInit, AfterViewInit {
     this.collectionNeighbors = [];
     this.localNeighborIds.clear();
     this.hoverTip.set(null);
+    this.hoveredNeighborId.set(null);
     if (typed === 'page') {
       this.sampleFetchSub?.unsubscribe();
       this.sampleFetchSub = undefined;
@@ -177,7 +179,7 @@ export class EmbeddingMapDialogComponent implements OnInit, AfterViewInit {
     const bg = '#f5f5f5';
     const primary = '#1976d2';
     const selectedColor = '#ed6c02';
-    const neighborColor = '#5c6bc0';
+    const neighborColor = '#2e7d32';
 
     const rowsWithEmb = this.viewRows.filter((r) => Array.isArray(r.embedding) && r.embedding.length > 0);
     if (!rowsWithEmb.length) {
@@ -225,15 +227,24 @@ export class EmbeddingMapDialogComponent implements OnInit, AfterViewInit {
 
     for (const p of this.points) {
       let color = primary;
+      let radius = 5;
       if (this.selected && p.row.id === this.selected.row.id) {
         color = selectedColor;
       } else if (this.collectionNeighborIds.has(p.row.id) || this.localNeighborIds.has(p.row.id)) {
         color = neighborColor;
       }
+      if (this.hoveredNeighborId() === p.row.id) {
+        radius = 7;
+      }
       ctx.fillStyle = color;
       ctx.beginPath();
-      ctx.arc(p.x, p.y, 5, 0, Math.PI * 2);
+      ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
       ctx.fill();
+      if (this.hoveredNeighborId() === p.row.id) {
+        ctx.strokeStyle = '#111';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      }
     }
   }
 
@@ -258,6 +269,7 @@ export class EmbeddingMapDialogComponent implements OnInit, AfterViewInit {
     this.collectionNeighborIds.clear();
     this.collectionNeighbors = [];
     this.localNeighborIds.clear();
+    this.hoveredNeighborId.set(null);
     this.updateLocalCosineNeighbors(closest);
     this.draw();
     this.cdr.markForCheck();
@@ -294,6 +306,16 @@ export class EmbeddingMapDialogComponent implements OnInit, AfterViewInit {
 
   onCanvasLeave(): void {
     this.hoverTip.set(null);
+  }
+
+  onNeighborRowEnter(id: string): void {
+    this.hoveredNeighborId.set(id);
+    this.draw();
+  }
+
+  onNeighborRowLeave(): void {
+    this.hoveredNeighborId.set(null);
+    this.draw();
   }
 
   private hitTest(event: MouseEvent, radius = 15): Point2D | null {

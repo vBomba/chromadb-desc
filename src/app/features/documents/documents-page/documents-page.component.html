@@ -1,17 +1,35 @@
 <mat-card>
   <mat-card-header>
-    <mat-card-title>
-      <a mat-button routerLink="/collections" class="back-link">
-        <mat-icon>arrow_back</mat-icon>
-      </a>
-      {{ collectionName() || 'Documents' }}
-    </mat-card-title>
+    <mat-card-title>{{ collectionName() || 'Documents' }}</mat-card-title>
     <mat-card-subtitle>Collection ID: {{ collectionId() }}</mat-card-subtitle>
-    <div class="header-actions" mat-card-avatar>
-      <button mat-icon-button (click)="openEmbeddingMap()" [disabled]="!hasEmbeddingsForMap()" aria-label="Show embedding map">
+    <div class="header-actions">
+      <button
+        mat-icon-button
+        class="header-icon-btn"
+        [disableRipple]="true"
+        routerLink="/collections"
+        aria-label="Back to collections"
+      >
+        <mat-icon>arrow_back</mat-icon>
+      </button>
+      <button
+        mat-icon-button
+        class="header-icon-btn"
+        [disableRipple]="true"
+        (click)="openEmbeddingMap()"
+        [disabled]="!hasEmbeddingsForMap()"
+        aria-label="Show embedding map"
+      >
         <mat-icon>scatter_plot</mat-icon>
       </button>
-      <button mat-icon-button color="primary" (click)="openAddDialog()" aria-label="Add document">
+      <button
+        mat-icon-button
+        class="header-icon-btn"
+        [disableRipple]="true"
+        color="primary"
+        (click)="openAddDialog()"
+        aria-label="Add document"
+      >
         <mat-icon>add</mat-icon>
       </button>
     </div>
@@ -19,10 +37,10 @@
   <mat-card-content>
     <div class="search-bar">
       <mat-form-field appearance="outline" class="search-field">
-        <mat-label>Semantic search</mat-label>
-        <input matInput [value]="searchQuery()" (input)="searchQuery.set($any($event.target).value)" (keydown.enter)="runSearch()" placeholder="Enter query text" />
+        <mat-label>Semantic search (vector)</mat-label>
+        <input matInput [value]="searchQuery()" (input)="searchQuery.set($any($event.target).value)" (keydown.enter)="runSearch()" placeholder="Find semantically similar documents" />
       </mat-form-field>
-      <button mat-flat-button color="primary" (click)="runSearch()">Search</button>
+      <button mat-flat-button color="primary" (click)="runSearch()">Search vectors</button>
       @if (searchMode() === 'search') {
         <button mat-button (click)="clearSearch()">Clear</button>
       }
@@ -30,20 +48,24 @@
     @if (searchMode() === 'list') {
       <div class="text-filter-bar">
         <mat-form-field appearance="outline" class="text-filter-field">
-          <mat-label>Filter by text</mat-label>
+          <mat-label>Text filter (all fields)</mat-label>
           <input
             matInput
             [value]="textFilterDraft()"
             (input)="textFilterDraft.set($any($event.target).value)"
             (keydown.enter)="applyTextFilter()"
-            placeholder="ID, document, metadata, embedding preview…"
+            placeholder="Substring in ID, document, metadata, embedding preview…"
             aria-label="Filter documents by substring"
           />
         </mat-form-field>
-        <button mat-flat-button color="primary" type="button" (click)="applyTextFilter()">Apply</button>
+        <button mat-flat-button color="primary" type="button" (click)="applyTextFilter()">Apply text filter</button>
         @if (appliedTextFilter().trim()) {
           <button mat-button type="button" (click)="clearTextFilter()">Clear filter</button>
         }
+      </div>
+      <div class="filter-help">
+        Semantic search sends your query to Chroma vector endpoint. Text filter applies substring matching on all fields
+        in this UI, with server prefilter by document text when supported.
       </div>
     }
     @if (loading()) {
@@ -174,6 +196,7 @@
                 aria-label="Go to page number"
               />
             </mat-form-field>
+            <span class="page-total">/ {{ totalPages() }}</span>
             <button mat-stroked-button type="button" (click)="goToJumpPage()">Go</button>
           </div>
         </div>

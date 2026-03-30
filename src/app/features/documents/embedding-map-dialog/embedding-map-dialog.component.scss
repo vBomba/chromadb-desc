@@ -80,15 +80,8 @@
   }
 
   .dot.neighbor {
-    background: #5c6bc0;
+    background: #2e7d32;
   }
-}
-
-.hint {
-  margin-top: 0.5rem;
-  font-size: 0.78rem;
-  line-height: 1.45;
-  color: var(--mat-sys-on-surface-variant, #666);
 }
 
 .neighbor-panel {
@@ -114,6 +107,14 @@
 
   li {
     margin-bottom: 0.2rem;
+    border-radius: 4px;
+    padding: 0.15rem 0.25rem;
+    cursor: pointer;
+  }
+
+  li.row-hovered,
+  li:hover {
+    background: color-mix(in srgb, var(--mat-sys-primary, #1976d2) 12%, transparent);
   }
 
   code {
