@@ -1,6 +1,6 @@
 {
-  "apiBaseUrl": "https://mock-url/api/v2",
-  "tenant": "default-tenant",
+  "apiBaseUrl": "http://localhost:8000/api/v2",
+  "tenant": "default_tenant",
   "database": "default_database",
   "apiKey": null,
   "heartbeatIntervalMs": 30000

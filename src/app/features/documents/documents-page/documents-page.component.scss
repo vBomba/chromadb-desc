@@ -13,16 +13,23 @@ mat-card-header {
 }
 
 .header-icon-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
   width: 38px;
   height: 38px;
-  line-height: 38px;
+  padding: 0 !important;
   border-radius: 8px;
+  --mdc-icon-button-state-layer-size: 38px;
 
   .mat-icon {
-    font-size: 20px;
-    width: 20px;
-    height: 20px;
-    line-height: 20px;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 22px;
+    height: 22px;
+    font-size: 22px;
+    line-height: 1 !important;
   }
 }
 
@@ -57,11 +64,11 @@ mat-card-header {
   margin-bottom: 0.85rem;
   font-size: 0.78rem;
   line-height: 1.35;
-  color: var(--mat-sys-on-surface-variant, #666);
+  color: var(--eco-text-muted);
 }
 
 :host ::ng-deep mark.text-filter-hit {
-  background: color-mix(in srgb, var(--mat-sys-primary, #1976d2) 22%, transparent);
+  background: color-mix(in srgb, var(--eco-accent) 22%, transparent);
   color: inherit;
   padding: 0 0.05em;
   border-radius: 2px;
@@ -101,16 +108,16 @@ mat-card-header {
     cursor: pointer;
   }
 
+  /* Block + inline alignment: avoids row height “jump” vs flex inside fixed-height mat-row */
   .id-cell-wrapper {
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
     width: 100%;
-    min-height: 2rem;
     box-sizing: border-box;
+    line-height: inherit;
 
     .id-cell.copyable,
     .id-cell {
+      display: inline;
+      vertical-align: middle;
       cursor: pointer;
       font-size: inherit;
       line-height: inherit;
@@ -121,7 +128,11 @@ mat-card-header {
     }
 
     .copy-btn {
-      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      vertical-align: middle;
+      margin-inline-start: 0.25rem;
       --mdc-icon-button-state-layer-size: 28px;
       width: 28px;
       height: 28px;
@@ -143,7 +154,8 @@ mat-card-header {
 }
 
 :host ::ng-deep .documents-table .mat-column-select {
-  width: 44px;
+  width: 38px;
+  max-width: 38px;
 }
 
 :host ::ng-deep .documents-table .mat-column-id {
@@ -159,33 +171,23 @@ mat-card-header {
 }
 
 :host ::ng-deep .documents-table .mat-column-actions {
-  width: 84px;
+  width: 92px;
+  max-width: 92px;
 }
 
-:host ::ng-deep .documents-table .mat-column-actions .mat-mdc-icon-button {
-  --mdc-icon-button-state-layer-size: 28px;
-  width: 28px;
-  height: 28px;
-  padding: 2px;
-}
-
-:host ::ng-deep .documents-table .mat-column-actions .mat-icon {
-  font-size: 16px;
-  width: 16px;
-  height: 16px;
-  line-height: 16px;
-}
-
-.paginator-row {
+/* One toolbar row: paginator + page jump, same height as paginator */
+.paginator-bar {
   display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  gap: 0.5rem 1rem;
-  border-top: 1px solid var(--mat-sys-outline-variant, rgba(0, 0, 0, 0.12));
-  padding-top: 0.25rem;
+  align-items: stretch;
+  width: 100%;
+  box-sizing: border-box;
+  border-top: 1px solid var(--eco-border);
+  background: var(--eco-surface);
 }
 
-.paginator-main {
+:host ::ng-deep .paginator-bar .mat-mdc-paginator {
+  border-top: none;
+  background: transparent !important;
   flex: 1 1 auto;
   min-width: 0;
 }
@@ -193,17 +195,30 @@ mat-card-header {
 .page-jump {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.35rem;
   flex: 0 0 auto;
-  padding-top: 0.35rem;
+  padding: 0 0.65rem 0 0.25rem;
+  align-self: center;
+}
 
-  .page-jump-field {
-    width: 5.5rem;
-  }
+.page-jump-label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--eco-text-muted);
+  white-space: nowrap;
+}
 
-  .page-total {
-    min-width: 3.25rem;
-    font-size: 0.9rem;
-    color: var(--mat-sys-on-surface-variant, #666);
-  }
+/* Uses global eco input tokens; only width + tight horizontal padding */
+.page-jump-input {
+  width: 3rem;
+  min-width: 0;
+  text-align: center;
+  padding-inline: 0.3rem;
+}
+
+.page-total {
+  min-width: 2.75rem;
+  font-size: 0.85rem;
+  color: var(--eco-text-muted);
+  white-space: nowrap;
 }

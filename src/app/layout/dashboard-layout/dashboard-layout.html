@@ -1,74 +1,77 @@
-<mat-sidenav-container class="dashboard-container">
-  <mat-sidenav
-    #drawer
-    [mode]="sidenavMode()"
-    [opened]="!isHandset()"
-    class="dashboard-sidenav"
-  >
-    <mat-toolbar class="sidenav-toolbar">Chroma Desc</mat-toolbar>
-    <mat-nav-list>
-      <a mat-list-item routerLink="/connection" routerLinkActive="active" (click)="isHandset() && drawer.close()">
-        <mat-icon matListItemIcon>link</mat-icon>
-        <span matListItemTitle>Connection</span>
-      </a>
-      <a mat-list-item routerLink="/configuration" routerLinkActive="active" (click)="isHandset() && drawer.close()">
-        <mat-icon matListItemIcon>settings</mat-icon>
-        <span matListItemTitle>Configuration</span>
-      </a>
-      <a mat-list-item routerLink="/server-status" routerLinkActive="active" (click)="isHandset() && drawer.close()">
-        <mat-icon matListItemIcon>monitor_heart</mat-icon>
-        <span matListItemTitle>Server status</span>
-      </a>
-      <a mat-list-item routerLink="/logs" routerLinkActive="active" (click)="isHandset() && drawer.close()">
-        <mat-icon matListItemIcon>list_alt</mat-icon>
-        <span matListItemTitle>Logs</span>
-      </a>
-      <a mat-list-item routerLink="/collections" routerLinkActive="active" (click)="isHandset() && drawer.close()">
-        <mat-icon matListItemIcon>folder</mat-icon>
-        <span matListItemTitle>Collections</span>
-      </a>
-    </mat-nav-list>
-  </mat-sidenav>
-  <mat-sidenav-content class="dashboard-content">
-    <mat-toolbar class="main-toolbar">
-      @if (isHandset()) {
-      <button
-        mat-icon-button
-        type="button"
-        (click)="drawer.toggle()"
-        aria-label="Toggle menu"
-      >
-        <mat-icon>menu</mat-icon>
-      </button>
-    }
-      <span class="toolbar-spacer"></span>
-      <span class="heartbeat-indicator" [matTooltip]="heartbeatTooltip()">
-        @switch (heartbeat.status()) {
-          @case ('checking') {
-            <mat-spinner diameter="20" class="heartbeat-spinner"></mat-spinner>
-          }
-          @case ('connected') {
-            <mat-icon class="status-icon connected" aria-hidden="true">fiber_manual_record</mat-icon>
-          }
-          @case ('disconnected') {
-            <mat-icon class="status-icon disconnected" aria-hidden="true">fiber_manual_record</mat-icon>
-          }
-          @case ('idle') {
-            <mat-icon class="status-icon idle" aria-hidden="true">fiber_manual_record</mat-icon>
-          }
+<div class="dashboard-root">
+  <mat-toolbar class="app-topbar">
+    <button
+      mat-icon-button
+      type="button"
+      (click)="toggleSidenav()"
+      aria-label="Toggle menu"
+    >
+      <i [class]="menuIconClass()" aria-hidden="true"></i>
+    </button>
+    <span class="app-topbar-title">Chroma Desc</span>
+    <span class="toolbar-spacer"></span>
+    <span class="heartbeat-indicator" [matTooltip]="heartbeatTooltip()">
+      @switch (heartbeat.status()) {
+        @case ('checking') {
+          <mat-spinner diameter="20" class="heartbeat-spinner"></mat-spinner>
         }
-      </span>
-      <button
-        mat-icon-button
-        type="button"
-        (click)="themeService.toggleTheme()"
-        [attr.aria-label]="themeService.theme() === 'light' ? 'Switch to dark theme' : 'Switch to light theme'"
-      >
-        <mat-icon>{{ themeService.theme() === 'light' ? 'dark_mode' : 'light_mode' }}</mat-icon>
-      </button>
-    </mat-toolbar>
-    <main class="main-content">
-      <router-outlet />
-    </main>
-  </mat-sidenav-content>
-</mat-sidenav-container>
+        @case ('connected') {
+          <mat-icon class="status-icon connected" aria-hidden="true">fiber_manual_record</mat-icon>
+        }
+        @case ('disconnected') {
+          <mat-icon class="status-icon disconnected" aria-hidden="true">fiber_manual_record</mat-icon>
+        }
+        @case ('idle') {
+          <mat-icon class="status-icon idle" aria-hidden="true">fiber_manual_record</mat-icon>
+        }
+      }
+    </span>
+    <button
+      mat-icon-button
+      type="button"
+      (click)="themeService.toggleTheme()"
+      [attr.aria-label]="themeService.theme() === 'light' ? 'Switch to dark theme' : 'Switch to light theme'"
+    >
+      <mat-icon>{{ themeService.theme() === 'light' ? 'dark_mode' : 'light_mode' }}</mat-icon>
+    </button>
+  </mat-toolbar>
+
+  <mat-sidenav-container #drawerContainer class="dashboard-container" autosize>
+    <mat-sidenav
+      #drawer
+      [mode]="sidenavMode()"
+      [opened]="isHandset() ? sidenavOpened() : true"
+      class="dashboard-sidenav"
+      [class.collapsed]="!isHandset() && sidenavCollapsed()"
+      (openedChange)="onSidenavOpenedChange($event)"
+    >
+      <mat-nav-list>
+        <a mat-list-item [disableRipple]="true" routerLink="/connection" routerLinkActive="active" (click)="onNavigate()">
+          <i class="bx bx-link-alt nav-icon" aria-hidden="true"></i>
+          <span matListItemTitle class="nav-title">Connection</span>
+        </a>
+        <a mat-list-item [disableRipple]="true" routerLink="/configuration" routerLinkActive="active" (click)="onNavigate()">
+          <i class="bx bx-cog nav-icon" aria-hidden="true"></i>
+          <span matListItemTitle class="nav-title">Configuration</span>
+        </a>
+        <a mat-list-item [disableRipple]="true" routerLink="/server-status" routerLinkActive="active" (click)="onNavigate()">
+          <i class="bx bx-pulse nav-icon" aria-hidden="true"></i>
+          <span matListItemTitle class="nav-title">Server status</span>
+        </a>
+        <a mat-list-item [disableRipple]="true" routerLink="/logs" routerLinkActive="active" (click)="onNavigate()">
+          <i class="bx bx-list-ul nav-icon" aria-hidden="true"></i>
+          <span matListItemTitle class="nav-title">Logs</span>
+        </a>
+        <a mat-list-item [disableRipple]="true" routerLink="/collections" routerLinkActive="active" (click)="onNavigate()">
+          <i class="bx bx-folder nav-icon" aria-hidden="true"></i>
+          <span matListItemTitle class="nav-title">Collections</span>
+        </a>
+      </mat-nav-list>
+    </mat-sidenav>
+    <mat-sidenav-content class="dashboard-content">
+      <main class="main-content">
+        <router-outlet />
+      </main>
+    </mat-sidenav-content>
+  </mat-sidenav-container>
+</div>

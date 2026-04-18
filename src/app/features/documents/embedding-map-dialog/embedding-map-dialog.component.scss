@@ -84,6 +84,30 @@
   }
 }
 
+:host-context(body.app-dark-theme) {
+  .legend .dot.neighbor {
+    background: #8b5cf6;
+  }
+
+  .legend .dot.primary {
+    background: #c4b5fd;
+  }
+
+  .map-canvas {
+    border-color: var(--eco-border);
+  }
+
+  .neighbor-panel {
+    border-color: var(--eco-border);
+    background: color-mix(in srgb, var(--eco-surface-muted) 92%, transparent);
+  }
+
+  .neighbor-list li.row-hovered,
+  .neighbor-list li:hover {
+    background: color-mix(in srgb, var(--eco-accent) 18%, transparent);
+  }
+}
+
 .neighbor-panel {
   margin-top: 0.75rem;
   padding: 0.5rem 0.75rem;

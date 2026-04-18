@@ -176,10 +176,12 @@ export class EmbeddingMapDialogComponent implements OnInit, AfterViewInit {
     const h = canvas.height;
     if (w < 10 || h < 10) return;
 
-    const bg = '#f5f5f5';
-    const primary = '#1976d2';
+    const isDark =
+      typeof document !== 'undefined' && document.body.classList.contains('app-dark-theme');
+    const bg = isDark ? '#1f2230' : '#f5f5f5';
+    const primary = isDark ? '#c4b5fd' : '#1976d2';
     const selectedColor = '#ed6c02';
-    const neighborColor = '#2e7d32';
+    const neighborColor = isDark ? '#8b5cf6' : '#2e7d32';
 
     const rowsWithEmb = this.viewRows.filter((r) => Array.isArray(r.embedding) && r.embedding.length > 0);
     if (!rowsWithEmb.length) {
@@ -241,7 +243,7 @@ export class EmbeddingMapDialogComponent implements OnInit, AfterViewInit {
       ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
       ctx.fill();
       if (this.hoveredNeighborId() === p.row.id) {
-        ctx.strokeStyle = '#111';
+        ctx.strokeStyle = isDark ? '#e4e4e7' : '#111';
         ctx.lineWidth = 1.5;
         ctx.stroke();
       }

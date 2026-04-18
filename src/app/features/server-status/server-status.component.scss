@@ -36,7 +36,7 @@
     }
 
     &.success mat-icon {
-      color: var(--mat-sys-primary, green);
+      color: var(--mat-sys-primary, var(--eco-accent-strong));
     }
 
     &.error mat-icon {

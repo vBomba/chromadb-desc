@@ -1,36 +1,806 @@
-// Include theming for Angular Material with `mat.theme()`.
-// Colors use light-dark() so light/dark mode is controlled by color-scheme on html.
 @use '@angular/material' as mat;
+@import '@fontsource/lexend/400.css';
+@import '@fontsource/lexend/500.css';
+@import '@fontsource/lexend/600.css';
+@import '@fontsource/lexend/700.css';
 
-html {
-  height: 100%;
-  color-scheme: light;
-  @include mat.theme(
-    (
-      color: (
-        primary: mat.$azure-palette,
-        tertiary: mat.$blue-palette,
-        theme-type: color-scheme,
-      ),
-      typography: Roboto,
-      density: 0,
+$light-theme: mat.define-theme(
+  (
+    color: (
+      theme-type: light,
+      primary: mat.$green-palette
+    ),
+    density: (scale: 0),
+    typography: (
+      plain-family: '"Lexend", "Lexend Fallback", sans-serif',
+      brand-family: '"Lexend", "Lexend Fallback", sans-serif'
     )
-  );
+  )
+);
+
+$dark-theme: mat.define-theme(
+  (
+    color: (
+      theme-type: dark,
+      primary: mat.$violet-palette
+    ),
+    density: (scale: 0),
+    typography: (
+      plain-family: '"Lexend", "Lexend Fallback", sans-serif',
+      brand-family: '"Lexend", "Lexend Fallback", sans-serif'
+    )
+  )
+);
+
+:root {
+  --eco-white: #ffffff;
+  --eco-white-rgb: 255, 255, 255;
+  --eco-neutral-100: #f4f4f5;
+  --eco-neutral-200: #f9fafb;
+  --eco-neutral-300: #e4e4e7;
+  --eco-neutral-700: #71717a;
+  --eco-neutral-900: #18181b;
+  --eco-success-600: #0f9d58;
+  --eco-success-700: #0b7d45;
+  --eco-success-500-rgb: 15, 157, 88;
+  --eco-purple-400: #a78bfa;
+  --eco-purple-500: #8b5cf6;
+  --eco-purple-400-rgb: 167, 139, 250;
+  --eco-purple-500-rgb: 139, 92, 246;
+  --eco-shadow-rgb: 24, 24, 27;
+  --eco-shadow-soft-rgb: 0, 0, 0;
+
+  --eco-bg: #f4f4f5;
+  --eco-surface: #ffffff;
+  --eco-surface-muted: #f9fafb;
+  --eco-text: #18181b;
+  --eco-text-muted: #71717a;
+  --eco-border: #e4e4e7;
+  --eco-accent: #2e7d32;
+  --eco-accent-strong: #1b5e20;
+  --eco-ring: rgba(var(--eco-success-500-rgb), 0.2);
+  --eco-radius: 10px;
+  --eco-btn-text: #27272a;
+  --eco-btn-bg: var(--eco-accent);
+  --eco-btn-bg-strong: var(--eco-accent-strong);
+  --eco-btn-text-inverse: var(--eco-white);
+
+  --eco-shadow-xs: 0 1px 2px rgba(var(--eco-shadow-rgb), 0.1);
+  --eco-shadow-sm: 0 1px 2px rgba(var(--eco-shadow-rgb), 0.14);
+  --eco-shadow-md: 0 4px 10px rgba(var(--eco-shadow-rgb), 0.08);
+  --eco-shadow-lg:
+    0 8px 16px rgba(var(--eco-success-500-rgb), 0.24),
+    0 2px 4px rgba(var(--eco-shadow-rgb), 0.14);
+  --eco-card-shadow:
+    0 1px 3px rgba(var(--eco-shadow-soft-rgb), 0.1),
+    0 1px 2px rgba(var(--eco-shadow-soft-rgb), 0.06);
+  --eco-card-shadow-hover:
+    0 8px 14px rgba(var(--eco-shadow-soft-rgb), 0.12),
+    0 4px 8px rgba(var(--eco-shadow-soft-rgb), 0.08);
+  --eco-card-bg: var(--eco-surface);
+  --eco-card-border: var(--eco-border);
+
+  /* Text fields: same shell as paginator native input (muted fill + 8px radius) */
+  --eco-input-bg: var(--eco-surface-muted);
+  --eco-input-radius: 8px;
+  --eco-input-min-height: 38px;
+  --eco-input-padding-y: 0.4rem;
+  --eco-input-padding-x: 0.65rem;
 }
 
-html[data-theme='dark'] {
-  color-scheme: dark;
+body.app-light-theme {
+  @include mat.all-component-themes($light-theme);
+  --eco-bg: var(--eco-neutral-100);
+  --eco-surface: var(--eco-white);
+  --eco-surface-muted: var(--eco-neutral-200);
+  --eco-text: var(--eco-neutral-900);
+  --eco-text-muted: var(--eco-neutral-700);
+  --eco-border: var(--eco-neutral-300);
+  --eco-accent: var(--eco-success-600);
+  --eco-accent-strong: var(--eco-success-700);
+  --eco-ring: rgba(var(--eco-success-500-rgb), 0.2);
+  --eco-btn-bg: var(--eco-accent);
+  --eco-btn-bg-strong: var(--eco-accent-strong);
+  --eco-input-bg: var(--eco-surface-muted);
+  --eco-card-bg: #ffffff;
+  --eco-card-border: color-mix(in srgb, var(--eco-border) 82%, var(--eco-accent) 18%);
+  --eco-card-shadow:
+    0 1px 2px rgba(var(--eco-shadow-rgb), 0.06),
+    0 2px 8px rgba(var(--eco-success-500-rgb), 0.07);
+  --eco-card-shadow-hover:
+    0 4px 14px rgba(var(--eco-shadow-rgb), 0.09),
+    0 10px 24px rgba(var(--eco-success-500-rgb), 0.12);
 }
 
-html[data-theme='light'] {
-  color-scheme: light;
+body.app-dark-theme {
+  @include mat.all-component-themes($dark-theme);
+  --eco-bg: #111217;
+  --eco-surface: #171922;
+  --eco-surface-muted: #1f2230;
+  --eco-text: #f4f4f5;
+  --eco-text-muted: #a1a1aa;
+  --eco-border: #2b2f3f;
+  --eco-accent: var(--eco-purple-400);
+  --eco-accent-strong: var(--eco-purple-500);
+  --eco-ring: rgba(var(--eco-purple-400-rgb), 0.22);
+  --eco-btn-text: #f4f4f5;
+  --eco-btn-bg: #6d28d9;
+  --eco-btn-bg-strong: #5b21b6;
+  --eco-shadow-lg:
+    0 8px 16px rgba(var(--eco-purple-500-rgb), 0.26),
+    0 2px 4px rgba(var(--eco-shadow-rgb), 0.14);
+
+  /* Improve readability density in dark mode */
+  --eco-text-muted: #b1b1bc;
+
+  /* Inputs: lift fill off page surface (muted alone is too close to --eco-surface) */
+  --eco-input-bg: color-mix(in srgb, var(--eco-surface-muted) 52%, #3d435c 48%);
+
+  /* Cards: slightly lifted panel + violet-tinted edge */
+  --eco-card-bg: color-mix(in srgb, var(--eco-surface) 32%, var(--eco-surface-muted) 68%);
+  --eco-card-border: color-mix(in srgb, var(--eco-border) 72%, var(--eco-purple-500) 28%);
+  --eco-card-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.38),
+    0 0 0 1px color-mix(in srgb, var(--eco-purple-500) 14%, transparent);
+  --eco-card-shadow-hover:
+    0 10px 28px rgba(0, 0, 0, 0.48),
+    0 0 0 1px color-mix(in srgb, var(--eco-purple-400) 26%, transparent);
+}
+
+body.app-dark-theme select:hover,
+body.app-dark-theme textarea:not(.mat-mdc-input-element):hover {
+  background-color: color-mix(in srgb, var(--eco-input-bg) 88%, var(--eco-text) 9%);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--eco-accent) 55%, var(--eco-border));
+}
+
+body.app-dark-theme input:not([type='checkbox']):not(.mat-mdc-input-element):hover,
+body.app-dark-theme .filter-select:hover {
+  background-color: color-mix(in srgb, var(--eco-input-bg) 88%, var(--eco-text) 9%);
+}
+
+body.app-dark-theme .mat-mdc-form-field:not(.mat-focused):not(.mat-form-field-disabled):hover .mat-mdc-text-field-wrapper {
+  background-color: color-mix(in srgb, var(--eco-input-bg) 88%, var(--eco-text) 9%) !important;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+  font-family: 'Lexend', 'Lexend Fallback', sans-serif;
+  background: var(--eco-bg);
+  color: var(--eco-text);
 }
 
 body {
-  background-color: var(--mat-sys-surface);
-  color: var(--mat-sys-on-surface);
-  font: var(--mat-sys-body-medium);
+  transition: background-color 200ms ease, color 200ms ease;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  margin: 0 0 0.5rem;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: var(--eco-text);
+}
+
+p,
+li,
+label,
+small {
+  line-height: 1.45;
+}
+
+p {
+  margin: 0 0 0.7rem;
+  color: var(--eco-text-muted);
+}
+
+button,
+.mat-mdc-raised-button,
+.mat-mdc-outlined-button,
+.mat-mdc-unelevated-button {
+  border-radius: var(--eco-radius) !important;
+  min-height: 38px;
+  padding: 0.55rem 0.9rem;
+  font-size: 0.86rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  transition:
+    transform 150ms ease,
+    box-shadow 200ms ease,
+    border-color 200ms ease,
+    background-color 200ms ease,
+    color 200ms ease !important;
+}
+
+.mat-mdc-raised-button,
+.mat-mdc-unelevated-button {
+  background: var(--eco-btn-bg) !important;
+  color: var(--eco-btn-text-inverse) !important;
+  border: 1px solid color-mix(in srgb, var(--eco-btn-bg-strong) 52%, transparent) !important;
+  box-shadow:
+    0 1px 2px rgba(var(--eco-shadow-rgb), 0.1),
+    0 1px 3px rgba(var(--eco-shadow-rgb), 0.05) !important;
+}
+
+.mat-mdc-raised-button:hover,
+.mat-mdc-unelevated-button:hover {
+  background: var(--eco-btn-bg-strong) !important;
+  box-shadow:
+    0 2px 5px rgba(var(--eco-shadow-rgb), 0.12),
+    0 1px 2px rgba(var(--eco-shadow-rgb), 0.08) !important;
+  transform: none;
+}
+
+body.app-dark-theme .mat-mdc-raised-button:hover,
+body.app-dark-theme .mat-mdc-unelevated-button:hover {
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.38),
+    0 1px 2px rgba(0, 0, 0, 0.22) !important;
+}
+
+.mat-mdc-outlined-button {
+  border-color: var(--eco-border) !important;
+  background: var(--eco-surface) !important;
+  color: var(--eco-btn-text) !important;
+  box-shadow: var(--eco-shadow-xs) !important;
+}
+
+.mat-mdc-outlined-button:hover {
+  border-color: var(--eco-accent) !important;
+  background: color-mix(in srgb, var(--eco-accent) 12%, var(--eco-surface)) !important;
+  box-shadow: var(--eco-shadow-md) !important;
+  transform: translateY(-1px);
+}
+
+.mat-mdc-raised-button:disabled,
+.mat-mdc-unelevated-button:disabled,
+.mat-mdc-outlined-button:disabled {
+  transform: none !important;
+  box-shadow: none !important;
+  opacity: 0.55;
+}
+
+/* Native controls — not inner Material inputs (outline + fill live on wrapper) */
+input:not([type='checkbox']):not(.mat-mdc-input-element),
+.filter-select {
+  border: 1px solid var(--eco-border);
+  border-radius: var(--eco-input-radius);
+  background-color: var(--eco-input-bg);
+  color: var(--eco-text);
+  font: inherit;
+  padding: var(--eco-input-padding-y) var(--eco-input-padding-x);
+  transition:
+    border-color 200ms ease,
+    box-shadow 200ms ease,
+    background-color 200ms ease;
+}
+
+/*
+ * select/textarea: Chromium/WebKit often draw a 1px vertical seam with border + border-radius.
+ * Use a hairline ring via box-shadow instead of border (input keeps border — no seam there).
+ */
+select,
+textarea:not(.mat-mdc-input-element) {
+  border: 0;
+  border-radius: var(--eco-input-radius);
+  background-color: var(--eco-input-bg);
+  color: var(--eco-text);
+  font: inherit;
+  padding: var(--eco-input-padding-y) var(--eco-input-padding-x);
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  box-shadow: 0 0 0 1px var(--eco-border);
+  background-clip: padding-box;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  transition:
+    box-shadow 200ms ease,
+    background-color 200ms ease;
+}
+
+select,
+input:not([type='checkbox']):not(.mat-mdc-input-element),
+.filter-select {
+  min-height: var(--eco-input-min-height);
+}
+
+textarea:not(.mat-mdc-input-element) {
+  min-height: 5rem;
+  line-height: 1.45;
+  resize: vertical;
+}
+
+select::-ms-expand {
+  display: none;
+}
+
+/* Custom chevron — avoids the vertical seam next to the native dropdown arrow */
+select {
+  padding-inline-end: 2.35rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'%3E%3Cpath fill='%2371717a' d='M6 8l4 4 4-4H6z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.55rem center;
+  background-size: 1.15rem;
+  cursor: pointer;
+}
+
+body.app-dark-theme select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'%3E%3Cpath fill='%23b1b1bc' d='M6 8l4 4 4-4H6z'/%3E%3C/svg%3E");
+}
+
+select:hover,
+textarea:not(.mat-mdc-input-element):hover {
+  background-color: color-mix(in srgb, var(--eco-input-bg) 88%, var(--eco-text) 6%);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--eco-accent) 62%, var(--eco-border));
+}
+
+input:not([type='checkbox']):not(.mat-mdc-input-element):hover,
+.filter-select:hover {
+  border-color: color-mix(in srgb, var(--eco-accent) 62%, var(--eco-border));
+  background-color: color-mix(in srgb, var(--eco-input-bg) 88%, var(--eco-text) 6%);
+}
+
+select:focus,
+textarea:not(.mat-mdc-input-element):focus {
+  outline: none;
+  box-shadow:
+    0 0 0 1px var(--eco-accent),
+    0 0 0 4px var(--eco-ring);
+}
+
+input:not([type='checkbox']):not(.mat-mdc-input-element):focus,
+.filter-select:focus {
+  outline: none;
+  border-color: var(--eco-accent);
+  box-shadow: 0 0 0 3px var(--eco-ring);
+}
+
+.mat-mdc-form-field .mat-mdc-input-element,
+.mat-mdc-form-field textarea.mat-mdc-input-element {
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.mat-mdc-form-field textarea.mat-mdc-input-element {
+  background-color: transparent !important;
+  background-clip: padding-box !important;
+}
+
+/* Removes a faint tonal seam on outlined controls (Material overlay on top of wrapper fill) */
+.mat-mdc-form-field .mat-mdc-form-field-focus-overlay {
+  opacity: 0 !important;
+}
+
+/* Outline is drawn by mdc-notched-outline — inner flex border duplicates it (vertical seam) */
+.mat-mdc-form-field .mat-mdc-form-field-flex {
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.mat-mdc-form-field-type-mat-select .mat-mdc-select-trigger,
+.mat-mdc-form-field-type-mat-select .mat-mdc-select-value {
+  background: transparent !important;
+}
+
+.mat-mdc-form-field-type-mat-select .mat-mdc-select-arrow-wrapper {
+  border-inline-start: none !important;
+  box-shadow: none !important;
+}
+
+/* Outlined fields: filled track like native eco inputs */
+.mat-mdc-form-field .mat-mdc-text-field-wrapper {
+  background-color: var(--eco-input-bg) !important;
+  border-radius: var(--eco-input-radius) !important;
+}
+
+.mat-mdc-form-field.mat-form-field-disabled .mat-mdc-text-field-wrapper {
+  background-color: color-mix(in srgb, var(--eco-input-bg) 72%, var(--eco-surface) 28%) !important;
+}
+
+.mat-mdc-form-field:not(.mat-focused):not(.mat-form-field-disabled):hover .mat-mdc-text-field-wrapper {
+  background-color: color-mix(in srgb, var(--eco-input-bg) 88%, var(--eco-text) 6%) !important;
+}
+
+.mat-mdc-form-field .mdc-text-field--outlined {
+  border-radius: var(--eco-input-radius);
+}
+
+.mat-mdc-form-field .mat-mdc-floating-label,
+.mat-mdc-form-field .mdc-floating-label {
+  color: var(--eco-text-muted) !important;
+}
+
+.mat-mdc-form-field .mdc-notched-outline__leading,
+.mat-mdc-form-field .mdc-notched-outline__notch,
+.mat-mdc-form-field .mdc-notched-outline__trailing {
+  border-color: var(--eco-border) !important;
+  border-width: 1px !important;
+}
+
+.mat-mdc-form-field.mat-focused .mdc-notched-outline__leading,
+.mat-mdc-form-field.mat-focused .mdc-notched-outline__notch,
+.mat-mdc-form-field.mat-focused .mdc-notched-outline__trailing {
+  border-color: var(--eco-accent) !important;
+}
+
+/* One focus affordance: notch only (avoid outline + inner glow “double border”) */
+.mat-mdc-form-field.mat-focused .mdc-text-field--outlined {
+  box-shadow: none !important;
+}
+
+/* Checkboxes — native (tables, filters) */
+input[type='checkbox'] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
   margin: 0;
+  border: 1px solid var(--eco-border);
+  border-radius: 4px;
+  background: var(--eco-surface);
+  display: inline-grid;
+  place-content: center;
+  cursor: pointer;
+  transition:
+    border-color 180ms ease,
+    background-color 180ms ease,
+    box-shadow 180ms ease,
+    transform 120ms ease;
+}
+
+input[type='checkbox']::after {
+  content: '';
+  width: 8px;
+  height: 8px;
+  transform: scale(0);
+  transition: transform 120ms ease;
+  clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
+  background: var(--eco-white);
+}
+
+input[type='checkbox']:hover {
+  border-color: color-mix(in srgb, var(--eco-accent) 70%, var(--eco-border));
+}
+
+input[type='checkbox']:focus-visible {
+  outline: none;
+  border-color: var(--eco-accent);
+  box-shadow: 0 0 0 3px var(--eco-ring);
+}
+
+input[type='checkbox']:checked {
+  border-color: var(--eco-accent);
+  background: var(--eco-accent);
+}
+
+input[type='checkbox']:checked::after {
+  transform: scale(1);
+}
+
+input[type='checkbox']:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+body.app-dark-theme input[type='checkbox'] {
+  background: color-mix(in srgb, var(--eco-surface-muted) 82%, var(--eco-white) 8%);
+  border-color: color-mix(in srgb, var(--eco-border) 58%, var(--eco-white) 42%);
+}
+
+body.app-dark-theme input[type='checkbox']:checked {
+  background: var(--eco-accent);
+  border-color: var(--eco-accent);
+}
+
+body.app-dark-theme input[type='checkbox']:checked::after {
+  background: var(--eco-white);
+}
+
+body.app-dark-theme input[type='checkbox']:hover {
+  border-color: color-mix(in srgb, var(--eco-accent) 55%, var(--eco-white) 45%);
+}
+
+body.app-dark-theme input[type='checkbox']:focus-visible {
+  box-shadow: 0 0 0 3px var(--eco-ring);
+}
+
+/* mat-checkbox — dark theme accent (matches eco + Material primary) */
+body.app-dark-theme {
+  --mat-checkbox-selected-icon-color: var(--eco-accent-strong);
+  --mat-checkbox-selected-hover-icon-color: var(--eco-accent);
+  --mat-checkbox-selected-focus-icon-color: var(--eco-accent);
+  --mat-checkbox-selected-pressed-icon-color: var(--eco-accent-strong);
+  --mat-checkbox-selected-checkmark-color: var(--eco-white);
+  --mat-checkbox-unselected-icon-color: color-mix(in srgb, var(--eco-text-muted) 75%, var(--eco-border));
+  --mat-checkbox-unselected-hover-icon-color: var(--eco-text);
+  --mat-checkbox-unselected-focus-icon-color: var(--eco-text);
+}
+
+/* Dark checkbox container/ripple background for better contrast around box */
+body.app-dark-theme .mat-mdc-checkbox .mdc-checkbox__background {
+  background: color-mix(in srgb, var(--eco-surface-muted) 85%, var(--eco-white) 6%);
+  border-color: color-mix(in srgb, var(--eco-border) 62%, var(--eco-white) 38%) !important;
+}
+
+body.app-dark-theme .mat-mdc-checkbox .mdc-checkbox:hover .mdc-checkbox__background,
+body.app-dark-theme .mat-mdc-checkbox .mdc-checkbox__native-control:focus + .mdc-checkbox__ripple {
+  border-color: color-mix(in srgb, var(--eco-accent) 60%, var(--eco-white) 40%) !important;
+}
+
+body.app-dark-theme .mat-mdc-checkbox .mdc-checkbox__ripple,
+body.app-dark-theme .mat-mdc-checkbox .mat-mdc-checkbox-ripple {
+  background-color: color-mix(in srgb, var(--eco-accent) 12%, transparent);
+  border-radius: 8px;
+}
+
+/* Dense mat-checkbox + action icons inside data tables */
+.mat-mdc-table .mat-mdc-checkbox {
+  --mat-checkbox-state-layer-size: 24px;
+  --mat-checkbox-touch-target-size: 30px;
+}
+
+.mat-mdc-table td.mat-column-select,
+.mat-mdc-table th.mat-column-select {
+  text-align: center;
+  vertical-align: middle;
+  padding-inline: 0.2rem;
+}
+
+.mat-mdc-table td.mat-column-select .mat-mdc-checkbox {
+  display: inline-flex;
+  justify-content: center;
+}
+
+.mat-mdc-table td.mat-column-actions,
+.mat-mdc-table th.mat-column-actions {
+  display: table-cell;
+  text-align: center;
+  vertical-align: middle;
+  white-space: nowrap;
+  padding-inline: 0.15rem;
+}
+
+.mat-mdc-table td.mat-column-actions .mat-mdc-icon-button {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  vertical-align: middle;
+  padding: 0 !important;
+  --mdc-icon-button-state-layer-size: 28px;
+  width: 28px;
+  height: 28px;
+}
+
+.mat-mdc-table td.mat-column-actions .mat-mdc-icon-button + .mat-mdc-icon-button {
+  margin-inline-start: 0.1rem;
+}
+
+.mat-mdc-table td.mat-column-actions .mat-icon {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 0 !important;
+  width: 18px;
+  height: 18px;
+  font-size: 18px;
+  line-height: 1 !important;
+}
+
+/* Unthemed text buttons in dark mode (do NOT target icon buttons — they use state layer) */
+body.app-dark-theme .mat-unthemed.mat-mdc-button-base:not(.mat-mdc-icon-button),
+body.app-dark-theme .mat-mdc-button-base.mat-unthemed:not(.mat-mdc-icon-button) {
+  color: var(--eco-text) !important;
+  background: color-mix(in srgb, var(--eco-surface-muted) 88%, var(--eco-white) 5%);
+  border: 1px solid color-mix(in srgb, var(--eco-border) 70%, var(--eco-white) 30%);
+  box-shadow: var(--eco-shadow-xs);
+}
+
+body.app-dark-theme .mat-unthemed.mat-mdc-button-base:not(.mat-mdc-icon-button):hover,
+body.app-dark-theme .mat-mdc-button-base.mat-unthemed:not(.mat-mdc-icon-button):hover {
+  background: color-mix(in srgb, var(--eco-accent) 14%, var(--eco-surface-muted));
+  border-color: color-mix(in srgb, var(--eco-accent) 52%, var(--eco-border));
+}
+
+body.app-dark-theme .mat-unthemed.mat-mdc-button-base:not(.mat-mdc-icon-button):focus-visible,
+body.app-dark-theme .mat-mdc-button-base.mat-unthemed:not(.mat-mdc-icon-button):focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--eco-ring);
+}
+
+/* Icon buttons: flat, centered icon, single hover layer (copy + table actions) */
+.mat-mdc-icon-button.mat-unthemed,
+.mat-mdc-icon-button.copy-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  vertical-align: middle;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  line-height: 1 !important;
+}
+
+.mat-mdc-icon-button.mat-unthemed .mat-icon,
+.mat-mdc-icon-button.copy-btn .mat-icon {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 0 !important;
+}
+
+.mat-mdc-icon-button.mat-unthemed .mat-mdc-button-persistent-ripple::before,
+.mat-mdc-icon-button.copy-btn .mat-mdc-button-persistent-ripple::before {
+  background-color: transparent !important;
+}
+
+.mat-mdc-icon-button.mat-unthemed:hover .mat-mdc-button-persistent-ripple::before,
+.mat-mdc-icon-button.copy-btn:hover .mat-mdc-button-persistent-ripple::before {
+  background-color: color-mix(in srgb, var(--eco-accent) 16%, transparent) !important;
+  opacity: 1 !important;
+}
+
+body.app-dark-theme .mat-mdc-icon-button.mat-unthemed,
+body.app-dark-theme .mat-mdc-icon-button.copy-btn {
+  color: var(--eco-text-muted) !important;
+}
+
+body.app-dark-theme .mat-mdc-icon-button.mat-unthemed:hover,
+body.app-dark-theme .mat-mdc-icon-button.copy-btn:hover {
+  color: var(--eco-accent) !important;
+}
+
+/* Small global readability pass */
+.mat-mdc-card-header {
+  padding: 1rem 1rem 0.35rem !important;
+}
+
+.mat-mdc-card-content {
+  padding: 0.25rem 1rem 1rem !important;
+}
+
+.mat-mdc-card-content > * + * {
+  margin-top: 0.9rem;
+}
+
+.mat-mdc-card {
+  border-radius: 12px !important;
+  background: var(--eco-card-bg) !important;
+  color: var(--eco-text);
+  border: 1px solid var(--eco-card-border);
+  box-shadow: var(--eco-card-shadow) !important;
+  transition:
+    box-shadow 200ms ease,
+    transform 150ms ease,
+    border-color 200ms ease;
+}
+
+.mat-mdc-card:hover {
+  box-shadow: var(--eco-card-shadow-hover) !important;
+  border-color: color-mix(in srgb, var(--eco-card-border) 70%, var(--eco-accent) 30%);
+}
+
+.mat-mdc-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  padding: 0.35rem 1rem 1rem !important;
+}
+
+/* Unified table styling */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--eco-surface);
+}
+
+/* Plain HTML tables only — mat-table uses border grid below */
+table:not(.mat-mdc-table) th,
+table:not(.mat-mdc-table) td {
+  border: 1px solid var(--eco-border);
+  padding: 0.58rem 0.72rem;
+  text-align: left;
+  vertical-align: middle;
+}
+
+table:not(.mat-mdc-table) th {
+  background: var(--eco-surface-muted);
+  color: color-mix(in srgb, var(--eco-accent-strong) 58%, var(--eco-text));
+  font-weight: 600;
+}
+
+table:not(.mat-mdc-table) tbody tr:hover {
+  background: color-mix(in srgb, var(--eco-accent) 5%, var(--eco-surface));
+}
+
+/*
+ * Material removes bottom border on last row (.mdc-data-table__row:last-child > .mat-mdc-cell).
+ * Global border-collapse: collapse also fights border-radius on the table frame.
+ * Use separate + 0 spacing so outer edges and corners stay visible.
+ */
+table.mat-mdc-table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.mat-mdc-table {
+  background: var(--eco-surface) !important;
+  border-radius: 12px;
+  overflow: hidden;
+  border: none;
+}
+
+.mat-mdc-header-row,
+.mat-mdc-row {
+  min-height: 48px;
+}
+
+.mat-mdc-table thead .mat-mdc-header-cell {
+  border-top: 1px solid var(--eco-border);
+}
+
+.mat-mdc-table .mat-mdc-header-cell,
+.mat-mdc-table .mat-mdc-cell {
+  border-right: 1px solid var(--eco-border);
+  border-bottom: 1px solid var(--eco-border);
+}
+
+.mat-mdc-table .mat-mdc-header-cell:first-child,
+.mat-mdc-table .mat-mdc-cell:first-child {
+  border-left: 1px solid var(--eco-border);
+}
+
+/* Restore bottom edge (Material default removes it on last body row) */
+.mat-mdc-table tbody .mdc-data-table__row:last-child > .mat-mdc-cell {
+  border-bottom: 1px solid var(--eco-border) !important;
+}
+
+.mat-mdc-table thead .mat-mdc-header-row .mat-mdc-header-cell:first-of-type {
+  border-top-left-radius: 11px;
+}
+
+.mat-mdc-table thead .mat-mdc-header-row .mat-mdc-header-cell:last-of-type {
+  border-top-right-radius: 11px;
+}
+
+.mat-mdc-table tbody tr:last-child .mat-mdc-cell:first-of-type {
+  border-bottom-left-radius: 11px;
+}
+
+.mat-mdc-table tbody tr:last-child .mat-mdc-cell:last-of-type {
+  border-bottom-right-radius: 11px;
+}
+
+.mat-mdc-header-cell {
+  background: var(--eco-surface-muted) !important;
+  color: color-mix(in srgb, var(--eco-accent-strong) 58%, var(--eco-text)) !important;
+  font-weight: 600;
+}
+
+.mat-mdc-row:hover .mat-mdc-cell {
+  background: color-mix(in srgb, var(--eco-accent) 5%, var(--eco-surface));
+}
+
+.mat-mdc-paginator {
+  background: var(--eco-surface) !important;
+  color: var(--eco-text) !important;
+  border-top: 1px solid var(--eco-border);
+}
+
+body {
   height: 100%;
 }
-/* You can add global styles to this file, and also import other style files */

@@ -1,30 +1,30 @@
 <mat-card class="logs-card">
   <mat-card-header>
     <mat-card-title>Logs</mat-card-title>
-    <mat-card-subtitle>Останні помилки API (останні 100 записів)</mat-card-subtitle>
+    <mat-card-subtitle>Latest API errors (last 100 entries)</mat-card-subtitle>
     <button mat-flat-button color="warn" mat-card-avatar (click)="clear()" [disabled]="!errorLog.logs().length">
       <mat-icon>delete_sweep</mat-icon>
     </button>
   </mat-card-header>
   <mat-card-content>
     @if (!errorLog.logs().length) {
-      <p class="empty">Немає записів.</p>
+      <p class="empty">No entries yet.</p>
     } @else {
       <table mat-table [dataSource]="errorLog.logs()" class="logs-table">
         <ng-container matColumnDef="at">
-          <th mat-header-cell *matHeaderCellDef>Час</th>
+          <th mat-header-cell *matHeaderCellDef>Time</th>
           <td mat-cell *matCellDef="let row">{{ row.at | date:'short' }}</td>
         </ng-container>
         <ng-container matColumnDef="message">
-          <th mat-header-cell *matHeaderCellDef>Повідомлення</th>
+          <th mat-header-cell *matHeaderCellDef>Message</th>
           <td mat-cell *matCellDef="let row">{{ row.message }}</td>
         </ng-container>
         <ng-container matColumnDef="detail">
-          <th mat-header-cell *matHeaderCellDef>Деталі</th>
+          <th mat-header-cell *matHeaderCellDef>Details</th>
           <td mat-cell *matCellDef="let row" class="detail-cell">{{ row.detail }}</td>
         </ng-container>
         <ng-container matColumnDef="hint">
-          <th mat-header-cell *matHeaderCellDef>Порада</th>
+          <th mat-header-cell *matHeaderCellDef>Hint</th>
           <td mat-cell *matCellDef="let row">{{ row.hint ?? '—' }}</td>
         </ng-container>
         <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>

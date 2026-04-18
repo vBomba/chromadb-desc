@@ -6,6 +6,24 @@ mat-card-header {
 
   button[mat-card-avatar] {
     margin-left: auto;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-width: 40px;
+    width: 40px;
+    height: 40px;
+    padding: 0 !important;
+
+    .mat-icon {
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      margin: 0 !important;
+      width: 22px;
+      height: 22px;
+      font-size: 22px;
+      line-height: 1 !important;
+    }
   }
 }
 
@@ -46,15 +64,14 @@ mat-card-header {
   }
 
   .id-cell-wrapper {
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
     width: 100%;
-    min-height: 2.5rem;
     box-sizing: border-box;
+    line-height: inherit;
 
     .id-cell.copyable,
     .id-cell {
+      display: inline;
+      vertical-align: middle;
       cursor: pointer;
       font-size: inherit;
       line-height: inherit;
@@ -65,7 +82,11 @@ mat-card-header {
     }
 
     .copy-btn {
-      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      vertical-align: middle;
+      margin-inline-start: 0.25rem;
     }
   }
 }

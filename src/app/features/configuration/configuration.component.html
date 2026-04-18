@@ -1,10 +1,13 @@
 <mat-card class="config-card">
   <mat-card-header>
     <mat-card-title>ChromaDB configuration</mat-card-title>
-    <mat-card-subtitle>
-      Parameters used for API requests. Saved configuration is stored in the browser (localStorage) and overrides config.json.
+    <mat-card-subtitle class="config-subtitle">
+      <span class="config-subtitle-text">
+        Parameters used for API requests. Saved configuration is stored in the browser (localStorage) and overrides
+        <code>config.json</code>.
+      </span>
       @if (hasStoredConfig) {
-        <span class="stored-badge">Using saved config</span>
+        <span class="stored-badge" aria-live="polite">Using saved config</span>
       }
     </mat-card-subtitle>
   </mat-card-header>
@@ -23,7 +26,7 @@
         </mat-form-field>
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Tenant</mat-label>
-          <input matInput formControlName="tenant" placeholder="default-tenant" />
+          <input matInput formControlName="tenant" placeholder="default_tenant" />
           @if (form.controls.tenant.hasError('required') && form.controls.tenant.touched) {
             <mat-error>Required</mat-error>
           }

@@ -1,5 +1,7 @@
 .config-card {
-  max-width: 560px;
+  width: 100%;
+  max-width: min(920px, 100%);
+  box-sizing: border-box;
 }
 
 .config-form {
@@ -12,18 +14,51 @@
   width: 100%;
 }
 
-.stored-badge {
-  display: inline-block;
-  margin-left: 0.5rem;
-  padding: 0.15rem 0.5rem;
-  font-size: 0.75rem;
-  background: var(--mat-sys-primary-container, #e3f2fd);
-  color: var(--mat-sys-on-primary-container, #01579b);
-  border-radius: 4px;
+.config-subtitle {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.55rem;
 }
 
-mat-card-subtitle {
-  display: flex;
+.config-subtitle-text {
+  display: block;
+  line-height: 1.45;
+  color: var(--eco-text-muted);
+
+  code {
+    font-size: 0.88em;
+    padding: 0.08em 0.28em;
+    border-radius: 4px;
+    background: color-mix(in srgb, var(--eco-surface-muted) 88%, var(--eco-border) 12%);
+    border: 1px solid color-mix(in srgb, var(--eco-border) 80%, transparent);
+  }
+}
+
+.stored-badge {
+  display: inline-flex;
   align-items: center;
-  flex-wrap: wrap;
+  gap: 0.35rem;
+  padding: 0.22rem 0.6rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border-radius: var(--eco-input-radius, 8px);
+  border: 1px solid color-mix(in srgb, var(--eco-accent) 38%, var(--eco-border));
+  background: color-mix(in srgb, var(--eco-accent) 11%, var(--eco-card-bg, var(--eco-surface)));
+  color: color-mix(in srgb, var(--eco-accent-strong) 72%, var(--eco-text));
+  white-space: nowrap;
+}
+
+/* Keep action buttons on one row when the card is wide enough */
+.config-card .mat-mdc-card-actions {
+  flex-wrap: nowrap;
+  gap: 0.5rem;
+}
+
+@media (max-width: 720px) {
+  .config-card .mat-mdc-card-actions {
+    flex-wrap: wrap;
+  }
 }

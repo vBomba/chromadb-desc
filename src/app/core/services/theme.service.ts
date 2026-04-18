@@ -38,5 +38,7 @@ export class ThemeService {
     if (typeof document === 'undefined') return;
     document.documentElement.setAttribute('data-theme', mode);
     document.documentElement.style.colorScheme = mode;
+    document.body.classList.toggle('app-dark-theme', mode === 'dark');
+    document.body.classList.toggle('app-light-theme', mode === 'light');
   }
 }
