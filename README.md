@@ -26,6 +26,38 @@ Edit `public/config.json` (or the same file in your build output):
 - **database** – Database name.
 - **apiKey** – Optional. When set, sent as `x-chroma-token` header. For production you can also set `window.env.CHROMA_API_KEY` (e.g. via env replacement in the build).
 
+## Run ChromaDB locally with Docker
+
+Docker-related files live in **`docker/chromadb/`** (compose + seed script). Local bind-mount data, `.env`, and `docker-compose.override.yml` in that folder are listed in `.gitignore` so they are not committed.
+
+From the repository root:
+
+```bash
+cd docker/chromadb
+docker compose up -d chromadb
+docker compose run --rm chromadb-seed
+```
+
+What this creates:
+
+- ChromaDB at `http://localhost:8000`
+- API base URL `http://localhost:8000/api/v2`
+- Tenant `default_tenant`
+- Database `default_database`
+- Test collection `test_table` with 3 seeded rows
+
+Optional checks:
+
+```bash
+curl http://localhost:8000/api/v2/heartbeat
+```
+
+Stop services (run from `docker/chromadb`):
+
+```bash
+docker compose down
+```
+
 ## Development server
 
 To start a local development server, run:

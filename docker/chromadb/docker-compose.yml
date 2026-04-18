@@ -1,0 +1,38 @@
+services:
+  chromadb:
+    image: chromadb/chroma:1.0.20
+    container_name: chromadb-local
+    ports:
+      - "8000:8000"
+    volumes:
+      - chromadb_data:/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v2/heartbeat', timeout=2)\"",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  chromadb-seed:
+    image: python:3.12-slim
+    container_name: chromadb-seed
+    depends_on:
+      chromadb:
+        condition: service_healthy
+    environment:
+      CHROMA_BASE_URL: http://chromadb:8000/api/v2
+      CHROMA_TENANT: default_tenant
+      CHROMA_DATABASE: default_database
+      TEST_COLLECTION: test_table
+    volumes:
+      - ./seed_chroma.py:/seed_chroma.py:ro
+    command: >-
+      sh -c "pip install --no-cache-dir requests &&
+      python /seed_chroma.py"
+    restart: "no"
+
+volumes:
+  chromadb_data:

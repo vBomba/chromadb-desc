@@ -42,3 +42,8 @@ __screenshots__/
 # System files
 .DS_Store
 Thumbs.db
+
+# ChromaDB Docker stack: local data, secrets, overrides (see docker/chromadb/)
+docker/chromadb/data/
+docker/chromadb/.env
+docker/chromadb/docker-compose.override.yml
