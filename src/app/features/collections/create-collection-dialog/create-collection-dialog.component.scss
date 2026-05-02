@@ -1,7 +1,26 @@
-.full-width {
-  width: 100%;
+.form-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 280px;
 }
 
-mat-dialog-content {
-  min-width: 280px;
+.vb-field-label {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--vb-color-text-muted, var(--eco-text-muted));
+}
+
+.vb-field-error {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--vb-palette-red-800, #b3261e);
+}
+
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.65rem;
+  margin-top: 1rem;
 }

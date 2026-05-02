@@ -1,33 +1,8 @@
-mat-card-header {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-
-  button[mat-card-avatar] {
-    margin-left: auto;
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    min-width: 40px;
-    width: 40px;
-    height: 40px;
-    padding: 0 !important;
-
-    .mat-icon {
-      display: inline-flex !important;
-      align-items: center !important;
-      justify-content: center !important;
-      margin: 0 !important;
-      width: 22px;
-      height: 22px;
-      font-size: 22px;
-      line-height: 1 !important;
-    }
-  }
+.vb-panel__head vb-button .bx {
+  font-size: 1.35rem;
 }
 
-.loading {
+.loading-row {
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -41,9 +16,22 @@ mat-card-header {
   margin-bottom: 1rem;
 }
 
-.filters-text {
+.filter-field {
   flex: 1;
-  min-width: 220px;
+  min-width: 160px;
+
+  &--grow {
+    flex: 2;
+    min-width: 220px;
+  }
+}
+
+.vb-field-label {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 500;
+  margin-bottom: 0.35rem;
+  color: var(--vb-color-text-muted, var(--eco-text-muted));
 }
 
 .collections-table {
@@ -67,26 +55,16 @@ mat-card-header {
     width: 100%;
     box-sizing: border-box;
     line-height: inherit;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem;
 
-    .id-cell.copyable,
-    .id-cell {
-      display: inline;
-      vertical-align: middle;
-      cursor: pointer;
-      font-size: inherit;
-      line-height: inherit;
+    .id-clip {
+      flex: 1;
+      min-width: 0;
       word-break: break-all;
-      margin: 0;
-      padding: 0;
-      &:hover { opacity: 0.85; }
-    }
-
-    .copy-btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      vertical-align: middle;
-      margin-inline-start: 0.25rem;
+      font-size: 0.85em;
     }
   }
 }

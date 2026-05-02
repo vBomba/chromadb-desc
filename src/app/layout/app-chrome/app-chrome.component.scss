@@ -1,0 +1,10 @@
+:host {
+  display: block;
+  height: 100%;
+  min-height: 100vh;
+}
+
+.app-shell-header-actions {
+  display: inline-flex;
+  align-items: center;
+}

@@ -1,15 +1,17 @@
-<mat-card class="status-card">
-  <mat-card-header>
-    <mat-card-title>Server status</mat-card-title>
-    <mat-card-subtitle>Version, healthcheck, pre-flight checks, collections count</mat-card-subtitle>
-    <button mat-flat-button color="primary" mat-card-avatar (click)="refresh()" [disabled]="loading()">
-      <mat-icon>refresh</mat-icon>
-    </button>
-  </mat-card-header>
-  <mat-card-content>
+<div class="vb-panel status-card">
+  <header class="vb-panel__head">
+    <div class="vb-panel__titles">
+      <h2 class="vb-panel__title">Server status</h2>
+      <p class="vb-panel__subtitle">Version, healthcheck, pre-flight checks, collections count</p>
+    </div>
+    <vb-button variant="filled" (click)="refresh()" [disabled]="loading()">
+      <i class="bx bx-refresh" aria-hidden="true"></i>
+    </vb-button>
+  </header>
+  <div class="vb-panel__body">
     @if (loading()) {
       <div class="loading">
-        <mat-spinner diameter="32"></mat-spinner>
+        <vb-loader [size]="32" aria-label="Loading status" />
         <span>Loading…</span>
       </div>
     } @else {
@@ -17,9 +19,9 @@
         <div class="status-item">
           <span class="label">Version</span>
           @if (version()) {
-            <span class="value success"><mat-icon>check_circle</mat-icon> {{ version() }}</span>
+            <span class="value success"><i class="bx bx-check-circle" aria-hidden="true"></i> {{ version() }}</span>
           } @else if (versionError()) {
-            <span class="value error"><mat-icon>error</mat-icon> {{ versionError() }}</span>
+            <span class="value error"><i class="bx bx-error-circle" aria-hidden="true"></i> {{ versionError() }}</span>
           } @else {
             <span class="value">—</span>
           }
@@ -27,9 +29,9 @@
         <div class="status-item">
           <span class="label">Healthcheck</span>
           @if (healthcheck()) {
-            <span class="value success"><mat-icon>check_circle</mat-icon> {{ healthcheck() }}</span>
+            <span class="value success"><i class="bx bx-check-circle" aria-hidden="true"></i> {{ healthcheck() }}</span>
           } @else if (healthcheckError()) {
-            <span class="value error"><mat-icon>error</mat-icon> {{ healthcheckError() }}</span>
+            <span class="value error"><i class="bx bx-error-circle" aria-hidden="true"></i> {{ healthcheckError() }}</span>
           } @else {
             <span class="value">—</span>
           }
@@ -38,12 +40,12 @@
           <span class="label">Pre-flight checks</span>
           @if (preflight()) {
             <span class="value success">
-              <mat-icon>check_circle</mat-icon>
+              <i class="bx bx-check-circle" aria-hidden="true"></i>
               max_batch_size: {{ preflight()!.max_batch_size ?? '—' }},
               supports_base64: {{ preflight()!.supports_base64_encoding ?? '—' }}
             </span>
           } @else if (preflightError()) {
-            <span class="value error"><mat-icon>error</mat-icon> {{ preflightError() }}</span>
+            <span class="value error"><i class="bx bx-error-circle" aria-hidden="true"></i> {{ preflightError() }}</span>
           } @else {
             <span class="value">—</span>
           }
@@ -51,14 +53,14 @@
         <div class="status-item">
           <span class="label">Collections count (current DB)</span>
           @if (collectionsCount() !== null) {
-            <span class="value success"><mat-icon>check_circle</mat-icon> {{ collectionsCount() }}</span>
+            <span class="value success"><i class="bx bx-check-circle" aria-hidden="true"></i> {{ collectionsCount() }}</span>
           } @else if (collectionsCountError()) {
-            <span class="value error"><mat-icon>error</mat-icon> {{ collectionsCountError() }}</span>
+            <span class="value error"><i class="bx bx-error-circle" aria-hidden="true"></i> {{ collectionsCountError() }}</span>
           } @else {
             <span class="value">—</span>
           }
         </div>
       </div>
     }
-  </mat-card-content>
-</mat-card>
+  </div>
+</div>

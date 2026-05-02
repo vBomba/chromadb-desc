@@ -1,47 +1,45 @@
-<mat-card>
-  <mat-card-header>
-    <mat-card-title>Collections</mat-card-title>
-    <mat-card-subtitle>List of ChromaDB collections (up to 500)</mat-card-subtitle>
-    <button mat-flat-button color="primary" mat-card-avatar (click)="openCreateDialog()">
-      <mat-icon>add</mat-icon>
-    </button>
-  </mat-card-header>
-  <mat-card-content>
-    @if (!loading()) {
-      <div class="filters">
-      <mat-form-field appearance="outline">
-        <mat-label>Filter by tenant</mat-label>
-        <input
-          matInput
-          [(ngModel)]="filterTenant"
-          (ngModelChange)="applyFilters()"
-          placeholder="tenant"
-        />
-      </mat-form-field>
-      <mat-form-field appearance="outline">
-        <mat-label>Filter by database</mat-label>
-        <input
-          matInput
-          [(ngModel)]="filterDatabase"
-          (ngModelChange)="applyFilters()"
-          placeholder="database"
-        />
-      </mat-form-field>
-      <mat-form-field appearance="outline" class="filters-text">
-        <mat-label>Filter by collection (name or ID)</mat-label>
-        <input
-          matInput
-          [(ngModel)]="filterText"
-          (ngModelChange)="applyFilters()"
-          placeholder="collection name or id"
-        />
-      </mat-form-field>
+<div class="vb-panel">
+  <header class="vb-panel__head">
+    <div class="vb-panel__titles">
+      <h2 class="vb-panel__title">Collections</h2>
+      <p class="vb-panel__subtitle">List of ChromaDB collections (up to 500)</p>
     </div>
-    }
+    <vb-button variant="filled" (click)="openCreatePopup()">
+      <i class="bx bx-plus" aria-hidden="true"></i>
+    </vb-button>
+  </header>
+  <div class="vb-panel__body">
+    <div class="filters">
+      <div class="filter-field">
+        <span class="vb-field-label">Filter by tenant</span>
+        <vb-input
+          [value]="filterTenant"
+          (valueChange)="onFilterTenant($event)"
+          placeholder="tenant substring"
+        />
+      </div>
+      <div class="filter-field">
+        <span class="vb-field-label">Filter by database</span>
+        <vb-input
+          [value]="filterDatabase"
+          (valueChange)="onFilterDatabase($event)"
+          placeholder="database substring"
+        />
+      </div>
+      <div class="filter-field filter-field--grow">
+        <span class="vb-field-label">Filter by collection (name or ID)</span>
+        <vb-input
+          [value]="filterText"
+          (valueChange)="onFilterText($event)"
+          placeholder="name or id substring"
+        />
+      </div>
+    </div>
+
     @if (loading()) {
-      <div class="loading">
-        <mat-spinner diameter="32"></mat-spinner>
-        <span>Loading collections…</span>
+      <div class="loading-row">
+        <vb-loader [size]="32" aria-label="Loading collections" />
+        <span>Loading…</span>
       </div>
     } @else {
       <table mat-table [dataSource]="dataSource" matSort class="collections-table">
@@ -52,10 +50,10 @@
         <ng-container matColumnDef="id">
           <th mat-header-cell *matHeaderCellDef mat-sort-header>ID</th>
           <td mat-cell *matCellDef="let row" class="id-cell-wrapper">
-            <code class="id-cell copyable" (click)="copyId(row.id, $event)" title="Copy ID">{{ row.id }}</code>
-            <button mat-icon-button (click)="copyId(row.id, $event)" aria-label="Copy ID" class="copy-btn">
-              <mat-icon>content_copy</mat-icon>
-            </button>
+            <code class="id-clip">{{ row.id }}</code>
+            <vb-button variant="text" type="button" (click)="copyId(row.id, $event)" aria-label="Copy ID">
+              <i class="bx bx-copy" aria-hidden="true"></i>
+            </vb-button>
           </td>
         </ng-container>
         <ng-container matColumnDef="dimension">
@@ -69,12 +67,18 @@
         <ng-container matColumnDef="actions">
           <th mat-header-cell *matHeaderCellDef>Actions</th>
           <td mat-cell *matCellDef="let row">
-            <button mat-icon-button (click)="openCollection(row)" aria-label="Open collection">
-              <mat-icon>open_in_new</mat-icon>
-            </button>
-            <button mat-icon-button (click)="openDeleteDialog(row)" aria-label="Delete collection" color="warn">
-              <mat-icon>delete</mat-icon>
-            </button>
+            <vb-button variant="text" type="button" (click)="openCollection(row)" aria-label="Open collection">
+              <i class="bx bx-link-external" aria-hidden="true"></i>
+            </vb-button>
+            <vb-button
+              variant="text"
+              color="warn"
+              type="button"
+              (click)="openDeletePopup(row)"
+              aria-label="Delete collection"
+            >
+              <i class="bx bx-trash" aria-hidden="true"></i>
+            </vb-button>
           </td>
         </ng-container>
         <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
@@ -84,5 +88,31 @@
         </tr>
       </table>
     }
-  </mat-card-content>
-</mat-card>
+  </div>
+</div>
+
+<vb-popup
+  [open]="createCollectionOpen()"
+  (openChange)="onCreatePopupOpenChange($event)"
+  title="Create collection"
+>
+  <app-create-collection-form
+    #createForm
+    (created)="onCollectionCreated()"
+    (cancelled)="createCollectionOpen.set(false)"
+  />
+</vb-popup>
+
+<vb-popup
+  [open]="deleteCollectionOpen()"
+  (openChange)="onDeletePopupOpenChange($event)"
+  title="Delete collection"
+>
+  @if (deleteCollectionTarget(); as del) {
+    <app-delete-collection-form
+      [collection]="del"
+      (deleted)="onCollectionDeleted()"
+      (cancelled)="closeDeletePopup()"
+    />
+  }
+</vb-popup>

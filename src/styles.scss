@@ -1,3 +1,5 @@
+@use 'vbomba-ui/theme/vb-color-tokens';
+@use 'vbomba-ui/theme/vb-material-bridge';
 @use '@angular/material' as mat;
 @import '@fontsource/lexend/400.css';
 @import '@fontsource/lexend/500.css';
@@ -178,6 +180,48 @@ body {
 
 body {
   transition: background-color 200ms ease, color 200ms ease;
+}
+
+/* Page panels (vbomba-ui tokens + host app layout) */
+.vb-panel {
+  max-width: 960px;
+  margin: 0 auto;
+  border-radius: 12px;
+  border: 1px solid var(--vb-color-border-default);
+  background: var(--vb-color-surface-default);
+  box-shadow: var(--vb-color-effect-shadow-card);
+  color: var(--vb-color-text-primary);
+}
+
+.vb-panel__head {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 1rem 1.1rem;
+  border-bottom: 1px solid var(--vb-color-border-default);
+}
+
+.vb-panel__titles {
+  flex: 1;
+  min-width: 0;
+}
+
+.vb-panel__title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 600;
+}
+
+.vb-panel__subtitle {
+  margin: 0.25rem 0 0;
+  color: var(--vb-color-text-muted);
+  font-size: 0.88rem;
+  line-height: 1.4;
+}
+
+.vb-panel__body {
+  padding: 1rem 1.1rem 1.1rem;
 }
 
 h1,

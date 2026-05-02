@@ -1,5 +1,5 @@
 .connection-card {
-  max-width: 480px;
+  max-width: 520px;
 }
 
 .status-row {
@@ -8,17 +8,19 @@
   gap: 0.5rem;
   flex-wrap: wrap;
 
-  &.success mat-icon {
-    color: var(--mat-sys-primary, var(--eco-accent-strong));
+  &.success .bx {
+    color: var(--vb-color-action-primary, var(--eco-accent-strong));
+    font-size: 1.35rem;
   }
 
-  &.error mat-icon {
-    color: var(--mat-sys-error, red);
+  &.error .bx {
+    color: var(--vb-palette-red-800, #c62828);
+    font-size: 1.35rem;
   }
 
   .last-check {
     font-size: 0.875rem;
-    color: var(--mat-sys-on-surface-variant, #666);
+    color: var(--vb-color-text-muted, #666);
     margin-left: 0.25rem;
   }
 }
@@ -38,4 +40,11 @@
     gap: 0.25rem;
     font-size: 0.9rem;
   }
+}
+
+.card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-top: 1.25rem;
 }

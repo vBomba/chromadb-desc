@@ -1,9 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatButtonModule } from '@angular/material/button';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
+import { VbButtonComponent, VbInputComponent, VbTextareaComponent } from 'vbomba-ui';
 import { ChromaApiService } from '../../../core/services/chroma-api.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
 
@@ -19,10 +17,10 @@ export interface AddDocumentDialogData {
   standalone: true,
   imports: [
     MatDialogModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatButtonModule,
     ReactiveFormsModule,
+    VbInputComponent,
+    VbTextareaComponent,
+    VbButtonComponent,
   ],
   templateUrl: './add-document-dialog.component.html',
   styleUrl: './add-document-dialog.component.scss',

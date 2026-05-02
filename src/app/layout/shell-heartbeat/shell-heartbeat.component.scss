@@ -1,0 +1,22 @@
+.heartbeat-indicator {
+  display: inline-flex;
+  align-items: center;
+  margin-inline-end: 0.25rem;
+}
+
+.status-dot {
+  font-size: 0.65rem;
+  line-height: 1;
+
+  &.connected {
+    color: var(--vb-color-action-primary, #0f9d58);
+  }
+
+  &.disconnected {
+    color: #b3261e;
+  }
+
+  &.idle {
+    color: var(--vb-color-text-muted, #71717a);
+  }
+}

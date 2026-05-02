@@ -1,6 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
-import { MatButtonModule } from '@angular/material/button';
+import { VbButtonComponent } from 'vbomba-ui';
 import { ChromaApiService } from '../../../core/services/chroma-api.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { DocumentRow } from '../document-row.model';
@@ -13,7 +13,7 @@ export interface DeleteDocumentDialogData {
 @Component({
   selector: 'app-delete-document-dialog',
   standalone: true,
-  imports: [MatDialogModule, MatButtonModule],
+  imports: [MatDialogModule, VbButtonComponent],
   templateUrl: './delete-document-dialog.component.html',
   styleUrl: './delete-document-dialog.component.scss',
 })

@@ -4,15 +4,17 @@
     <p>No embeddings available for the selected points.</p>
   } @else {
     <div class="toolbar">
-      <mat-form-field appearance="outline" class="source-field" subscriptSizing="dynamic">
-        <mat-label>Points on map</mat-label>
-        <mat-select [value]="sourceMode()" (selectionChange)="onSourceModeChange($event.value)">
-          <mat-option value="page">Current table page</mat-option>
-          <mat-option value="sample100">First 100 records (with embeddings)</mat-option>
-        </mat-select>
-      </mat-form-field>
+      <div class="source-field">
+        <span class="vb-field-label">Points on map</span>
+        <vb-select
+          [value]="sourceMode()"
+          (valueChange)="onSourceModeChange($event)"
+          [options]="sourceOptions"
+          aria-label="Points on map"
+        />
+      </div>
       @if (loadingSample()) {
-        <mat-spinner diameter="28" />
+        <vb-loader [size]="28" aria-label="Loading sample" />
       }
       @if (neighborsLoading()) {
         <span class="loading-neighbors">Loading collection neighbors…</span>
@@ -62,5 +64,5 @@
   }
 </mat-dialog-content>
 <mat-dialog-actions align="end">
-  <button mat-flat-button (click)="close()">Close</button>
+  <vb-button variant="filled" label="Close" (click)="close()" />
 </mat-dialog-actions>

@@ -1,66 +1,55 @@
-<mat-card>
-  <mat-card-header>
-    <mat-card-title>{{ collectionName() || 'Documents' }}</mat-card-title>
-    <mat-card-subtitle>Collection ID: {{ collectionId() }}</mat-card-subtitle>
+<div class="vb-panel">
+  <header class="vb-panel__head doc-header">
+    <div class="vb-panel__titles">
+      <h2 class="vb-panel__title">{{ collectionName() || 'Documents' }}</h2>
+      <p class="vb-panel__subtitle">Collection ID: {{ collectionId() }}</p>
+    </div>
     <div class="header-actions">
-      <button
-        mat-icon-button
-        class="header-icon-btn"
-        [disableRipple]="true"
-        routerLink="/collections"
-        aria-label="Back to collections"
-      >
-        <mat-icon>arrow_back</mat-icon>
-      </button>
-      <button
-        mat-icon-button
-        class="header-icon-btn"
-        [disableRipple]="true"
+      <vb-button variant="text" type="button" routerLink="/collections" aria-label="Back to collections">
+        <i class="bx bx-arrow-back" aria-hidden="true"></i>
+      </vb-button>
+      <vb-button
+        variant="text"
+        type="button"
         (click)="openEmbeddingMap()"
         [disabled]="!hasEmbeddingsForMap()"
         aria-label="Show embedding map"
       >
-        <mat-icon>scatter_plot</mat-icon>
-      </button>
-      <button
-        mat-icon-button
-        class="header-icon-btn"
-        [disableRipple]="true"
-        color="primary"
-        (click)="openAddDialog()"
-        aria-label="Add document"
-      >
-        <mat-icon>add</mat-icon>
-      </button>
+        <i class="bx bx-scatter-chart" aria-hidden="true"></i>
+      </vb-button>
+      <vb-button variant="text" color="primary" type="button" (click)="openAddDialog()" aria-label="Add document">
+        <i class="bx bx-plus" aria-hidden="true"></i>
+      </vb-button>
     </div>
-  </mat-card-header>
-  <mat-card-content>
+  </header>
+  <div class="vb-panel__body">
     <div class="search-bar">
-      <mat-form-field appearance="outline" class="search-field">
-        <mat-label>Semantic search (vector)</mat-label>
-        <input matInput [value]="searchQuery()" (input)="searchQuery.set($any($event.target).value)" (keydown.enter)="runSearch()" placeholder="Find semantically similar documents" />
-      </mat-form-field>
-      <button mat-flat-button color="primary" (click)="runSearch()">Search vectors</button>
+      <vb-input
+        class="search-field"
+        [value]="searchQuery()"
+        (valueChange)="searchQuery.set($event)"
+        (keydown.enter)="runSearch()"
+        placeholder="Find semantically similar documents"
+        aria-label="Semantic search query"
+      />
+      <vb-button variant="filled" label="Search vectors" (click)="runSearch()" />
       @if (searchMode() === 'search') {
-        <button mat-button (click)="clearSearch()">Clear</button>
+        <vb-button variant="text" label="Clear" (click)="clearSearch()" />
       }
     </div>
     @if (searchMode() === 'list') {
       <div class="text-filter-bar">
-        <mat-form-field appearance="outline" class="text-filter-field">
-          <mat-label>Text filter (all fields)</mat-label>
-          <input
-            matInput
-            [value]="textFilterDraft()"
-            (input)="textFilterDraft.set($any($event.target).value)"
-            (keydown.enter)="applyTextFilter()"
-            placeholder="Substring in ID, document, metadata, embedding preview…"
-            aria-label="Filter documents by substring"
-          />
-        </mat-form-field>
-        <button mat-flat-button color="primary" type="button" (click)="applyTextFilter()">Apply text filter</button>
+        <vb-input
+          class="text-filter-field"
+          [value]="textFilterDraft()"
+          (valueChange)="textFilterDraft.set($event)"
+          (keydown.enter)="applyTextFilter()"
+          placeholder="Substring in ID, document, metadata, embedding preview…"
+          aria-label="Filter documents by substring"
+        />
+        <vb-button variant="filled" type="button" label="Apply text filter" (click)="applyTextFilter()" />
         @if (appliedTextFilter().trim()) {
-          <button mat-button type="button" (click)="clearTextFilter()">Clear filter</button>
+          <vb-button variant="text" type="button" label="Clear filter" (click)="clearTextFilter()" />
         }
       </div>
       <div class="filter-help">
@@ -70,27 +59,26 @@
     }
     @if (loading()) {
       <div class="loading">
-        <mat-spinner diameter="32"></mat-spinner>
+        <vb-loader [size]="32" aria-label="Loading documents" />
         <span>Loading…</span>
       </div>
     } @else {
       <table mat-table [dataSource]="dataSource" class="documents-table">
         <ng-container matColumnDef="select">
           <th mat-header-cell *matHeaderCellDef>
-            <mat-checkbox
-              (change)="toggleAll()"
+            <vb-checkbox
               [checked]="isAllSelected()"
+              (checkedChange)="toggleAllFromCheckbox($event)"
               [indeterminate]="selection.selected.length > 0 && !isAllSelected()"
               aria-label="Select all"
-            ></mat-checkbox>
+            />
           </th>
           <td mat-cell *matCellDef="let row">
-            <mat-checkbox
-              (click)="$event.stopPropagation()"
-              (change)="toggleRow(row)"
+            <vb-checkbox
               [checked]="selection.isSelected(row)"
+              (checkedChange)="toggleRowChecked(row, $event)"
               aria-label="Select row"
-            ></mat-checkbox>
+            />
           </td>
         </ng-container>
         <ng-container matColumnDef="id">
@@ -106,9 +94,9 @@
             } @else {
               <code class="id-cell copyable" (click)="copyId(row.id, $event)" title="Copy ID">{{ row.id }}</code>
             }
-            <button mat-icon-button (click)="copyId(row.id, $event)" aria-label="Copy ID" class="copy-btn">
-              <mat-icon>content_copy</mat-icon>
-            </button>
+            <vb-button variant="text" type="button" (click)="copyId(row.id, $event)" aria-label="Copy ID" class="copy-btn">
+              <i class="bx bx-copy" aria-hidden="true"></i>
+            </vb-button>
           </td>
         </ng-container>
         <ng-container matColumnDef="document">
@@ -144,12 +132,12 @@
         <ng-container matColumnDef="actions">
           <th mat-header-cell *matHeaderCellDef>Actions</th>
           <td mat-cell *matCellDef="let row" (click)="$event.stopPropagation()">
-            <button mat-icon-button (click)="openEditMetadataDialog(row)" aria-label="Edit metadata">
-              <mat-icon>edit</mat-icon>
-            </button>
-            <button mat-icon-button (click)="openDeleteDialog(row)" aria-label="Delete" color="warn">
-              <mat-icon>delete</mat-icon>
-            </button>
+            <vb-button variant="text" type="button" (click)="openEditMetadataDialog(row)" aria-label="Edit metadata">
+              <i class="bx bx-edit" aria-hidden="true"></i>
+            </vb-button>
+            <vb-button variant="text" color="warn" type="button" (click)="openDeleteDialog(row)" aria-label="Delete">
+              <i class="bx bx-trash" aria-hidden="true"></i>
+            </vb-button>
           </td>
         </ng-container>
         <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
@@ -167,36 +155,20 @@
         </tr>
       </table>
       <div class="bulk-actions">
-        <button mat-stroked-button color="warn" (click)="bulkDelete()" [disabled]="!selection.selected.length">
-          Delete selected
-        </button>
+        <vb-button variant="outlined" color="warn" label="Delete selected" (click)="bulkDelete()" [disabled]="!selection.selected.length" />
       </div>
       @if (searchMode() === 'list') {
         <div class="paginator-bar">
-          <mat-paginator
+          <vb-paginator
             class="paginator-main"
-            [length]="paginatorLength()"
+            [page]="pageIndex() + 1"
+            (pageChange)="onPaginatorPage($event)"
+            [totalItems]="paginatorLength()"
             [pageSize]="pageSize"
-            [pageIndex]="pageIndex()"
-            (page)="onPage($event)"
-            [hidePageSize]="true"
-          ></mat-paginator>
-          <div class="page-jump">
-            <span class="page-jump-label" aria-hidden="true">Page</span>
-            <input
-              type="number"
-              class="page-jump-input"
-              [min]="1"
-              [max]="totalPages()"
-              [value]="pageJumpInput()"
-              (input)="pageJumpInput.set($any($event.target).value)"
-              (keydown.enter)="goToJumpPage(); $event.preventDefault()"
-              aria-label="Go to page number"
-            />
-            <span class="page-total">/ {{ totalPages() }}</span>
-          </div>
+            aria-label="Documents pagination"
+          />
         </div>
       }
     }
-  </mat-card-content>
-</mat-card>
+  </div>
+</div>

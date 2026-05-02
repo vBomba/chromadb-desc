@@ -14,11 +14,7 @@ import { DestroyRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subscription } from 'rxjs';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatSelectModule } from '@angular/material/select';
+import { VbButtonComponent, VbLoaderComponent, VbSelectComponent, type VbSelectOption } from 'vbomba-ui';
 import { DocumentRow } from '../document-row.model';
 import { DocumentDetailDialogComponent } from '../document-detail-dialog/document-detail-dialog.component';
 import { pca2DScores } from '../embedding-pca.util';
@@ -48,11 +44,9 @@ interface Point2D {
   imports: [
     CommonModule,
     MatDialogModule,
-    MatButtonModule,
-    MatIconModule,
-    MatProgressSpinnerModule,
-    MatFormFieldModule,
-    MatSelectModule,
+    VbButtonComponent,
+    VbLoaderComponent,
+    VbSelectComponent,
     MatSnackBarModule,
   ],
   templateUrl: './embedding-map-dialog.component.html',
@@ -71,6 +65,10 @@ export class EmbeddingMapDialogComponent implements OnInit, AfterViewInit {
   protected viewRows: DocumentRow[] = [];
 
   protected sourceMode = signal<EmbeddingMapSourceMode>('page');
+  protected readonly sourceOptions: VbSelectOption[] = [
+    { value: 'page', label: 'Current table page' },
+    { value: 'sample100', label: 'First 100 records (with embeddings)' },
+  ];
   protected loadingSample = signal(false);
   protected neighborsLoading = signal(false);
   protected hoverTip = signal<{ left: number; top: number; text: string } | null>(null);

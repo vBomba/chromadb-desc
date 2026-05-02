@@ -1,52 +1,52 @@
-import { Component, inject } from '@angular/core';
-import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatButtonModule } from '@angular/material/button';
+import { Component, inject, output, signal } from '@angular/core';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
+import { VbButtonComponent, VbInputComponent } from 'vbomba-ui';
 import { ChromaApiService } from '../../../core/services/chroma-api.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
 
 @Component({
-  selector: 'app-create-collection-dialog',
+  selector: 'app-create-collection-form',
   standalone: true,
-  imports: [
-    MatDialogModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatButtonModule,
-    ReactiveFormsModule,
-  ],
+  imports: [ReactiveFormsModule, VbInputComponent, VbButtonComponent],
   templateUrl: './create-collection-dialog.component.html',
   styleUrl: './create-collection-dialog.component.scss',
 })
 export class CreateCollectionDialogComponent {
-  private dialogRef = inject(MatDialogRef<CreateCollectionDialogComponent>);
   private chroma = inject(ChromaApiService);
   private snackBar = inject(MatSnackBar);
 
-  protected nameControl = new FormControl<string>('', {
+  readonly created = output<void>();
+  readonly cancelled = output<void>();
+
+  readonly nameControl = new FormControl<string>('', {
     nonNullable: true,
     validators: [Validators.required, Validators.minLength(1)],
   });
-  protected submitting = false;
+  protected readonly submitting = signal(false);
 
-  protected cancel(): void {
-    this.dialogRef.close(false);
+  reset(): void {
+    this.nameControl.reset('');
+    this.submitting.set(false);
   }
 
-  protected submit(): void {
-    if (this.nameControl.invalid || this.submitting) return;
+  protected onCancel(): void {
+    this.reset();
+    this.cancelled.emit();
+  }
+
+  submit(): void {
+    if (this.nameControl.invalid || this.submitting()) return;
     const name = this.nameControl.value.trim();
     if (!name) return;
-    this.submitting = true;
+    this.submitting.set(true);
     this.chroma.createCollection({ name }).subscribe({
       next: () => {
         this.snackBar.open('Collection created', 'Close', { duration: 3000 });
-        this.dialogRef.close(true);
+        this.reset();
+        this.created.emit();
       },
       error: (err) => {
-        this.submitting = false;
+        this.submitting.set(false);
         const msg = err?.error?.message ?? err?.message ?? 'Failed to create collection';
         this.snackBar.open(String(msg), 'Close', { duration: 5000 });
       },

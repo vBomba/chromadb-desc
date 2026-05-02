@@ -1,4 +1,16 @@
 import { Routes } from '@angular/router';
+import type { VbShellNavLink } from 'vbomba-ui';
+
+export const CHROMA_SHELL_DATA: { appTitle: string; navLinks: VbShellNavLink[] } = {
+  appTitle: 'Chroma Desc',
+  navLinks: [
+    { path: '/connection', label: 'Connection', icon: 'bx bx-link-alt' },
+    { path: '/configuration', label: 'Configuration', icon: 'bx bx-cog' },
+    { path: '/server-status', label: 'Server status', icon: 'bx bx-pulse' },
+    { path: '/logs', label: 'Logs', icon: 'bx bx-list-ul' },
+    { path: '/collections', label: 'Collections', icon: 'bx bx-folder' },
+  ],
+};
 
 export const routes: Routes = [
   {
@@ -9,7 +21,8 @@ export const routes: Routes = [
   {
     path: '',
     loadComponent: () =>
-      import('./layout/dashboard-layout/dashboard-layout').then((m) => m.DashboardLayoutComponent),
+      import('./layout/app-chrome/app-chrome.component').then((m) => m.AppChromeComponent),
+    data: CHROMA_SHELL_DATA,
     children: [
       {
         path: 'connection',

@@ -1,34 +1,41 @@
-<mat-card class="connection-card">
-  <mat-card-header>
-    <mat-card-title>ChromaDB connection</mat-card-title>
-    <mat-card-subtitle>Verify that the API is reachable. Heartbeat runs periodically in the background.</mat-card-subtitle>
-  </mat-card-header>
-  <mat-card-content>
+<div class="vb-panel connection-card">
+  <header class="vb-panel__head">
+    <div class="vb-panel__titles">
+      <h2 class="vb-panel__title">ChromaDB connection</h2>
+      <p class="vb-panel__subtitle">
+        Verify that the API is reachable. Heartbeat runs periodically in the background.
+      </p>
+    </div>
+  </header>
+  <div class="vb-panel__body">
     @switch (heartbeat.status()) {
       @case ('idle') {
-        <p>Click the button below to check the connection. A heartbeat runs every 30 seconds (configurable in <code>config.json</code> as <code>heartbeatIntervalMs</code>).</p>
+        <p>
+          Click the button below to check the connection. A heartbeat runs every 30 seconds (configurable in
+          <code>config.json</code> as <code>heartbeatIntervalMs</code>).
+        </p>
       }
       @case ('checking') {
         <div class="status-row">
-          <mat-spinner diameter="24"></mat-spinner>
+          <vb-loader [size]="24" aria-label="Checking connection" />
           <span>Checking connection…</span>
         </div>
       }
       @case ('connected') {
         <div class="status-row success">
-          <mat-icon>check_circle</mat-icon>
+          <i class="bx bx-check-circle" aria-hidden="true"></i>
           <span>Connection successful.</span>
           @if (heartbeat.lastCheckAt()) {
-            <span class="last-check">Last check: {{ heartbeat.lastCheckAt() | date:'shortTime' }}</span>
+            <span class="last-check">Last check: {{ heartbeat.lastCheckAt() | date: 'shortTime' }}</span>
           }
         </div>
       }
       @case ('disconnected') {
         <div class="status-row error">
-          <mat-icon>error</mat-icon>
+          <i class="bx bx-error-circle" aria-hidden="true"></i>
           <span>{{ heartbeat.lastError() }}</span>
           @if (heartbeat.lastCheckAt()) {
-            <span class="last-check">Last check: {{ heartbeat.lastCheckAt() | date:'shortTime' }}</span>
+            <span class="last-check">Last check: {{ heartbeat.lastCheckAt() | date: 'shortTime' }}</span>
           }
         </div>
       }
@@ -37,12 +44,12 @@
       <h3>Database info</h3>
       @if (dbLoading()) {
         <div class="status-row">
-          <mat-spinner diameter="24"></mat-spinner>
+          <vb-loader [size]="24" aria-label="Loading database info" />
           <span>Loading database info…</span>
         </div>
       } @else if (dbError()) {
         <div class="status-row error">
-          <mat-icon>error</mat-icon>
+          <i class="bx bx-error-circle" aria-hidden="true"></i>
           <span>{{ dbError() }}</span>
         </div>
       } @else if (database()) {
@@ -53,13 +60,14 @@
         </div>
       }
     </div>
-  </mat-card-content>
-  <mat-card-actions>
-    <button mat-flat-button color="primary" (click)="checkConnection()" [disabled]="heartbeat.status() === 'checking'">
-      Check connection
-    </button>
-    <button mat-button (click)="loadDatabaseInfo()" [disabled]="dbLoading()">
-      Update database info
-    </button>
-  </mat-card-actions>
-</mat-card>
+    <div class="card-actions">
+      <vb-button
+        variant="filled"
+        label="Check connection"
+        (click)="checkConnection()"
+        [disabled]="heartbeat.status() === 'checking'"
+      />
+      <vb-button variant="text" label="Update database info" (click)="loadDatabaseInfo()" [disabled]="dbLoading()" />
+    </div>
+  </div>
+</div>

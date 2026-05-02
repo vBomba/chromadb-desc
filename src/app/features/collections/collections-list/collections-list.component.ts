@@ -1,37 +1,43 @@
-import { ChangeDetectorRef, Component, inject, signal, OnInit, AfterViewInit } from '@angular/core';
+import {
+  ChangeDetectorRef,
+  Component,
+  inject,
+  signal,
+  OnInit,
+  AfterViewInit,
+  ViewChild,
+  effect,
+} from '@angular/core';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { MatCardModule } from '@angular/material/card';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
 import { MatTableModule, MatTableDataSource } from '@angular/material/table';
-import { MatSortModule } from '@angular/material/sort';
-import { ViewChild } from '@angular/core';
-import { MatSort } from '@angular/material/sort';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSortModule, MatSort } from '@angular/material/sort';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
+import {
+  VbButtonComponent,
+  VbInputComponent,
+  VbLoaderComponent,
+  VbPopupComponent,
+} from 'vbomba-ui';
 import { ChromaApiService, ChromaCollection } from '../../../core/services/chroma-api.service';
 import { ErrorLogService } from '../../../core/services/error-log.service';
 import { CreateCollectionDialogComponent } from '../create-collection-dialog/create-collection-dialog.component';
 import { DeleteCollectionDialogComponent } from '../delete-collection-dialog/delete-collection-dialog.component';
-import { MatDialog } from '@angular/material/dialog';
 
 @Component({
   selector: 'app-collections-list',
   standalone: true,
   imports: [
     FormsModule,
-    MatCardModule,
-    MatButtonModule,
-    MatIconModule,
     MatTableModule,
-    MatProgressSpinnerModule,
     MatSnackBarModule,
-    MatFormFieldModule,
-    MatInputModule,
     MatSortModule,
+    VbButtonComponent,
+    VbInputComponent,
+    VbLoaderComponent,
+    VbPopupComponent,
+    CreateCollectionDialogComponent,
+    DeleteCollectionDialogComponent,
   ],
   templateUrl: './collections-list.component.html',
   styleUrl: './collections-list.component.scss',
@@ -39,10 +45,12 @@ import { MatDialog } from '@angular/material/dialog';
 export class CollectionsListComponent implements OnInit, AfterViewInit {
   private chroma = inject(ChromaApiService);
   private router = inject(Router);
-  private dialog = inject(MatDialog);
   private snackBar = inject(MatSnackBar);
   private errorLog = inject(ErrorLogService);
   private cdr = inject(ChangeDetectorRef);
+
+  @ViewChild(MatSort, { static: false }) sort?: MatSort;
+  @ViewChild('createForm') private createForm?: CreateCollectionDialogComponent;
 
   protected loading = signal(true);
   protected dataSource = new MatTableDataSource<ChromaCollection>([]);
@@ -55,7 +63,17 @@ export class CollectionsListComponent implements OnInit, AfterViewInit {
   private filterDebounceHandle: number | null = null;
   protected counts = new Map<string, number>();
 
-  @ViewChild(MatSort, { static: false }) sort?: MatSort;
+  protected readonly createCollectionOpen = signal(false);
+  protected readonly deleteCollectionOpen = signal(false);
+  protected readonly deleteCollectionTarget = signal<ChromaCollection | null>(null);
+
+  constructor() {
+    effect(() => {
+      if (this.createCollectionOpen()) {
+        queueMicrotask(() => this.createForm?.reset());
+      }
+    });
+  }
 
   ngOnInit(): void {
     this.dataSource.filterPredicate = (data: ChromaCollection, raw: string): boolean => {
@@ -86,6 +104,21 @@ export class CollectionsListComponent implements OnInit, AfterViewInit {
     if (this.sort) {
       this.dataSource.sort = this.sort;
     }
+  }
+
+  protected onFilterTenant(v: string): void {
+    this.filterTenant = v;
+    this.applyFilters();
+  }
+
+  protected onFilterDatabase(v: string): void {
+    this.filterDatabase = v;
+    this.applyFilters();
+  }
+
+  protected onFilterText(v: string): void {
+    this.filterText = v;
+    this.applyFilters();
   }
 
   protected load(): void {
@@ -144,7 +177,6 @@ export class CollectionsListComponent implements OnInit, AfterViewInit {
       const database = this.filterDatabase.trim();
       const collection = this.filterText.trim();
 
-      // If all CRN parts are non-empty, fetch directly by CRN.
       if (tenant && database && collection) {
         const crn = `${tenant}:${database}:${collection}`;
         this.loading.set(true);
@@ -164,7 +196,6 @@ export class CollectionsListComponent implements OnInit, AfterViewInit {
         return;
       }
 
-      // Otherwise, apply client-side filtering on the last loaded list.
       this.dataSource.data = this.lastLoaded;
       const payload = {
         tenant: tenant.toLowerCase(),
@@ -175,13 +206,39 @@ export class CollectionsListComponent implements OnInit, AfterViewInit {
     }, 300);
   }
 
-  protected openCreateDialog(): void {
-    const ref = this.dialog.open(CreateCollectionDialogComponent, {
-      width: '400px',
-    });
-    ref.afterClosed().subscribe((created) => {
-      if (created) this.load();
-    });
+  protected openCreatePopup(): void {
+    this.createCollectionOpen.set(true);
+  }
+
+  protected onCreatePopupOpenChange(open: boolean): void {
+    this.createCollectionOpen.set(open);
+  }
+
+  protected onCollectionCreated(): void {
+    this.createCollectionOpen.set(false);
+    this.load();
+  }
+
+  protected onDeletePopupOpenChange(open: boolean): void {
+    this.deleteCollectionOpen.set(open);
+    if (!open) {
+      this.deleteCollectionTarget.set(null);
+    }
+  }
+
+  protected openDeletePopup(collection: ChromaCollection): void {
+    this.deleteCollectionTarget.set(collection);
+    this.deleteCollectionOpen.set(true);
+  }
+
+  protected closeDeletePopup(): void {
+    this.deleteCollectionOpen.set(false);
+    this.deleteCollectionTarget.set(null);
+  }
+
+  protected onCollectionDeleted(): void {
+    this.closeDeletePopup();
+    this.load();
   }
 
   protected copyId(id: string, event?: Event): void {
@@ -190,15 +247,5 @@ export class CollectionsListComponent implements OnInit, AfterViewInit {
       () => this.snackBar.open('ID copied', 'Close', { duration: 2000 }),
       () => this.snackBar.open('Copy failed', 'Close', { duration: 3000 })
     );
-  }
-
-  protected openDeleteDialog(collection: ChromaCollection): void {
-    const ref = this.dialog.open(DeleteCollectionDialogComponent, {
-      width: '400px',
-      data: { collection },
-    });
-    ref.afterClosed().subscribe((deleted) => {
-      if (deleted) this.load();
-    });
   }
 }

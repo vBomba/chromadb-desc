@@ -1,47 +1,41 @@
-import { Component, inject } from '@angular/core';
-import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
-import { MatButtonModule } from '@angular/material/button';
-import { ChromaApiService } from '../../../core/services/chroma-api.service';
-import { ChromaCollection } from '../../../core/services/chroma-api.service';
+import { Component, inject, input, output, signal } from '@angular/core';
+import { VbButtonComponent } from 'vbomba-ui';
+import { ChromaApiService, ChromaCollection } from '../../../core/services/chroma-api.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
 
-export interface DeleteCollectionDialogData {
-  collection: ChromaCollection;
-}
-
 @Component({
-  selector: 'app-delete-collection-dialog',
+  selector: 'app-delete-collection-form',
   standalone: true,
-  imports: [MatDialogModule, MatButtonModule],
+  imports: [VbButtonComponent],
   templateUrl: './delete-collection-dialog.component.html',
   styleUrl: './delete-collection-dialog.component.scss',
 })
 export class DeleteCollectionDialogComponent {
-  private dialogRef = inject(MatDialogRef<DeleteCollectionDialogComponent>);
   private chroma = inject(ChromaApiService);
   private snackBar = inject(MatSnackBar);
-  protected data = inject<DeleteCollectionDialogData>(MAT_DIALOG_DATA);
 
-  protected deleting = false;
+  readonly collection = input.required<ChromaCollection>();
+  readonly deleted = output<void>();
+  readonly cancelled = output<void>();
 
-  protected get collection(): ChromaCollection {
-    return this.data.collection;
-  }
+  protected deleting = signal(false);
 
   protected cancel(): void {
-    this.dialogRef.close(false);
+    this.cancelled.emit();
   }
 
   protected confirm(): void {
-    if (this.deleting) return;
-    this.deleting = true;
-    this.chroma.deleteCollection(this.collection.id).subscribe({
+    if (this.deleting()) return;
+    const c = this.collection();
+    this.deleting.set(true);
+    this.chroma.deleteCollection(c.id).subscribe({
       next: () => {
         this.snackBar.open('Collection deleted', 'Close', { duration: 3000 });
-        this.dialogRef.close(true);
+        this.deleting.set(false);
+        this.deleted.emit();
       },
       error: (err) => {
-        this.deleting = false;
+        this.deleting.set(false);
         const msg = err?.error?.message ?? err?.message ?? 'Failed to delete collection';
         this.snackBar.open(String(msg), 'Close', { duration: 5000 });
       },

@@ -1,27 +1,43 @@
 <h2 mat-dialog-title>Add document</h2>
 <mat-dialog-content>
-  <mat-form-field appearance="outline" class="full-width">
-    <mat-label>ID</mat-label>
-    <input matInput [formControl]="idControl" placeholder="doc_1" />
+  <div class="field-block">
+    <label class="vb-field-label" for="add-doc-id">ID</label>
+    <vb-input
+      id="add-doc-id"
+      [value]="idControl.value"
+      (valueChange)="idControl.setValue($event); idControl.markAsTouched()"
+      placeholder="doc_1"
+    />
     @if (idControl.hasError('required') && idControl.touched) {
-      <mat-error>ID is required</mat-error>
+      <p class="vb-field-error">ID is required</p>
     }
-  </mat-form-field>
-  <mat-form-field appearance="outline" class="full-width">
-    <mat-label>Document text</mat-label>
-    <textarea matInput [formControl]="documentControl" rows="4" placeholder="Content..."></textarea>
-  </mat-form-field>
-  <mat-form-field appearance="outline" class="full-width">
-    <mat-label>Metadata (JSON)</mat-label>
-    <textarea matInput [formControl]="metadataControl" rows="3" placeholder='{"key": "value"}'></textarea>
-  </mat-form-field>
+  </div>
+  <div class="field-block">
+    <label class="vb-field-label" for="add-doc-text">Document text</label>
+    <vb-textarea
+      id="add-doc-text"
+      [value]="documentControl.value"
+      (valueChange)="documentControl.setValue($event)"
+      [rows]="4"
+      placeholder="Content…"
+    />
+  </div>
+  <div class="field-block">
+    <label class="vb-field-label" for="add-doc-meta">Metadata (JSON)</label>
+    <vb-textarea
+      id="add-doc-meta"
+      [value]="metadataControl.value"
+      (valueChange)="metadataControl.setValue($event)"
+      [rows]="3"
+      placeholder='{"key": "value"}'
+      [mono]="true"
+    />
+  </div>
   @if (data.dimension == null) {
     <p class="hint">Embedding dimension is unknown; using {{ dimension }}. Ensure your backend can index this.</p>
   }
 </mat-dialog-content>
 <mat-dialog-actions align="end">
-  <button mat-button (click)="cancel()">Cancel</button>
-  <button mat-flat-button color="primary" (click)="submit()" [disabled]="idControl.invalid || submitting">
-    Add
-  </button>
+  <vb-button variant="text" label="Cancel" (click)="cancel()" />
+  <vb-button variant="filled" label="Add" (click)="submit()" [disabled]="idControl.invalid || submitting" />
 </mat-dialog-actions>

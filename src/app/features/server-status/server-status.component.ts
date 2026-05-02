@@ -1,19 +1,11 @@
 import { Component, inject, signal } from '@angular/core';
-import { MatCardModule } from '@angular/material/card';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { VbButtonComponent, VbLoaderComponent } from 'vbomba-ui';
 import { ChromaApiService, ChecklistResponse } from '../../core/services/chroma-api.service';
 
 @Component({
   selector: 'app-server-status',
   standalone: true,
-  imports: [
-    MatCardModule,
-    MatButtonModule,
-    MatIconModule,
-    MatProgressSpinnerModule,
-  ],
+  imports: [VbButtonComponent, VbLoaderComponent],
   templateUrl: './server-status.component.html',
   styleUrl: './server-status.component.scss',
 })
@@ -70,14 +62,15 @@ export class ServerStatusComponent {
 
     this.chroma.getCollectionsCount().subscribe({
       next: (v) => {
-        this.collectionsCount.set(typeof v === 'object' && v != null && 'count' in v ? (v as { count: number }).count : Number(v));
+        this.collectionsCount.set(
+          typeof v === 'object' && v != null && 'count' in v ? (v as { count: number }).count : Number(v)
+        );
       },
       error: (e) => {
         this.collectionsCountError.set(this.messageFromError(e));
       },
     });
 
-    // Consider loaded after a short delay so all requests had a chance
     setTimeout(() => this.loading.set(false), 800);
   }
 

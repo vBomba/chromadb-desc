@@ -1,17 +1,17 @@
-import { Component, inject, signal, computed, effect, OnInit, DestroyRef } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, DestroyRef } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subscription } from 'rxjs';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { MatCardModule } from '@angular/material/card';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
 import { MatTableModule, MatTableDataSource } from '@angular/material/table';
-import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
+import {
+  VbButtonComponent,
+  VbCheckboxComponent,
+  VbInputComponent,
+  VbLoaderComponent,
+  VbPaginatorComponent,
+} from 'vbomba-ui';
 import { ChromaApiService } from '../../../core/services/chroma-api.service';
 import { ErrorLogService } from '../../../core/services/error-log.service';
 import { AddDocumentDialogComponent } from '../add-document-dialog/add-document-dialog.component';
@@ -22,7 +22,6 @@ import { EmbeddingMapDialogComponent } from '../embedding-map-dialog/embedding-m
 import { MatDialog } from '@angular/material/dialog';
 import { DocumentRow } from '../document-row.model';
 import { SelectionModel } from '@angular/cdk/collections';
-import { MatCheckboxModule } from '@angular/material/checkbox';
 import { DocumentsPageDataService } from '../documents-page-data.service';
 import { TEXT_FILTER_MAX_SCAN, metadataStringForMatch } from '../document-text-filter.util';
 import { escapeHtml, highlightHtml } from '../document-highlight.util';
@@ -35,16 +34,13 @@ const PAGE_SIZE = 25;
   providers: [DocumentsPageDataService],
   imports: [
     RouterLink,
-    MatCardModule,
-    MatButtonModule,
-    MatIconModule,
     MatTableModule,
-    MatPaginatorModule,
-    MatProgressSpinnerModule,
     MatSnackBarModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatCheckboxModule,
+    VbButtonComponent,
+    VbCheckboxComponent,
+    VbInputComponent,
+    VbLoaderComponent,
+    VbPaginatorComponent,
   ],
   templateUrl: './documents-page.component.html',
   styleUrl: './documents-page.component.scss',
@@ -90,16 +86,6 @@ export class DocumentsPageComponent implements OnInit {
     return typeof t === 'number' && t >= 0 ? t : this.pageSize;
   });
 
-  protected totalPages = computed(() => Math.max(1, Math.ceil(this.paginatorLength() / this.pageSize)));
-
-  protected pageJumpInput = signal('1');
-
-  constructor() {
-    effect(() => {
-      this.pageJumpInput.set(String(this.pageIndex() + 1));
-    });
-  }
-
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('collectionId');
     if (!id) return;
@@ -118,12 +104,13 @@ export class DocumentsPageComponent implements OnInit {
     this.loadPage(0);
   }
 
-  protected onPage(event: PageEvent): void {
-    this.pageIndex.set(event.pageIndex);
+  protected onPaginatorPage(pageOneBased: number): void {
+    const idx = pageOneBased - 1;
+    this.pageIndex.set(idx);
     if (this.hasTextFilter()) {
-      this.applyFilteredPageSlice(event.pageIndex);
+      this.applyFilteredPageSlice(idx);
     } else {
-      this.loadPage(event.pageIndex);
+      this.loadPage(idx);
     }
   }
 
@@ -162,28 +149,6 @@ export class DocumentsPageComponent implements OnInit {
     const needle = this.appliedTextFilter().trim();
     const html = needle ? highlightHtml(display, needle) : escapeHtml(display);
     return this.sanitizer.bypassSecurityTrustHtml(html);
-  }
-
-  protected goToJumpPage(): void {
-    const raw = this.pageJumpInput().trim();
-    const n = parseInt(raw, 10);
-    const max = this.totalPages();
-    if (!Number.isFinite(n) || n < 1) {
-      this.pageJumpInput.set(String(this.pageIndex() + 1));
-      return;
-    }
-    const pageOneBased = Math.min(Math.max(1, n), max);
-    const idx = pageOneBased - 1;
-    if (idx === this.pageIndex()) {
-      this.pageJumpInput.set(String(pageOneBased));
-      return;
-    }
-    this.pageIndex.set(idx);
-    if (this.hasTextFilter()) {
-      this.applyFilteredPageSlice(idx);
-    } else {
-      this.loadPage(idx);
-    }
   }
 
   private loadPage(pageIndex: number): void {
@@ -302,11 +267,11 @@ export class DocumentsPageComponent implements OnInit {
     }
   }
 
-  protected toggleAll(): void {
-    if (this.isAllSelected()) {
-      this.selection.clear();
-    } else {
+  protected toggleAllFromCheckbox(checked: boolean): void {
+    if (checked) {
       this.selection.select(...this.dataSource.data);
+    } else {
+      this.selection.clear();
     }
   }
 
@@ -314,8 +279,12 @@ export class DocumentsPageComponent implements OnInit {
     return this.selection.selected.length === this.dataSource.data.length && this.dataSource.data.length > 0;
   }
 
-  protected toggleRow(row: DocumentRow): void {
-    this.selection.toggle(row);
+  protected toggleRowChecked(row: DocumentRow, checked: boolean): void {
+    if (checked) {
+      this.selection.select(row);
+    } else {
+      this.selection.deselect(row);
+    }
   }
 
   protected bulkDelete(): void {

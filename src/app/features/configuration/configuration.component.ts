@@ -1,9 +1,6 @@
 import { Component, inject, OnInit } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { MatCardModule } from '@angular/material/card';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatButtonModule } from '@angular/material/button';
+import { AbstractControl, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { VbButtonComponent, VbInputComponent } from 'vbomba-ui';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { ConfigService } from '../../core/services/config.service';
 import { ConnectionHeartbeatService } from '../../core/services/connection-heartbeat.service';
@@ -11,14 +8,7 @@ import { ConnectionHeartbeatService } from '../../core/services/connection-heart
 @Component({
   selector: 'app-configuration',
   standalone: true,
-  imports: [
-    ReactiveFormsModule,
-    MatCardModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatButtonModule,
-    MatSnackBarModule,
-  ],
+  imports: [ReactiveFormsModule, VbInputComponent, VbButtonComponent, MatSnackBarModule],
   templateUrl: './configuration.component.html',
   styleUrl: './configuration.component.scss',
 })
@@ -38,6 +28,25 @@ export class ConfigurationComponent implements OnInit {
 
   protected saving = false;
   protected loading = true;
+
+  protected patchControl(control: AbstractControl, value: string): void {
+    control.setValue(value);
+    control.markAsTouched();
+  }
+
+  protected heartbeatDisplay(): string {
+    return String(this.form.controls.heartbeatIntervalMs.value);
+  }
+
+  protected patchHeartbeat(raw: string): void {
+    const n = parseInt(raw, 10);
+    if (Number.isFinite(n)) {
+      this.form.controls.heartbeatIntervalMs.setValue(n);
+    } else {
+      this.form.controls.heartbeatIntervalMs.setValue(this.form.controls.heartbeatIntervalMs.value);
+    }
+    this.form.controls.heartbeatIntervalMs.markAsTouched();
+  }
 
   async ngOnInit(): Promise<void> {
     try {
@@ -81,21 +90,24 @@ export class ConfigurationComponent implements OnInit {
     this.configService.clearSavedConfig();
     this.snackBar.open('Cleared saved config. Reloading from config.json…', 'Close', { duration: 3000 });
     this.loading = true;
-    this.configService.loadConfig().then((c) => {
-      this.form.patchValue({
-        apiBaseUrl: c.apiBaseUrl,
-        tenant: c.tenant,
-        database: c.database,
-        apiKey: c.apiKey ?? '',
-        heartbeatIntervalMs: c.heartbeatIntervalMs ?? 30000,
+    this.configService
+      .loadConfig()
+      .then((c) => {
+        this.form.patchValue({
+          apiBaseUrl: c.apiBaseUrl,
+          tenant: c.tenant,
+          database: c.database,
+          apiKey: c.apiKey ?? '',
+          heartbeatIntervalMs: c.heartbeatIntervalMs ?? 30000,
+        });
+        this.loading = false;
+        this.heartbeat.stop();
+        this.heartbeat.start();
+      })
+      .catch(() => {
+        this.loading = false;
+        this.snackBar.open('Failed to load config.json', 'Close', { duration: 5000 });
       });
-      this.loading = false;
-      this.heartbeat.stop();
-      this.heartbeat.start();
-    }).catch(() => {
-      this.loading = false;
-      this.snackBar.open('Failed to load config.json', 'Close', { duration: 5000 });
-    });
   }
 
   protected exportFile(): void {

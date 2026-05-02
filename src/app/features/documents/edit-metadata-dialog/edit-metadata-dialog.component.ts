@@ -1,9 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatButtonModule } from '@angular/material/button';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import { VbButtonComponent, VbTextareaComponent } from 'vbomba-ui';
 import { ChromaApiService } from '../../../core/services/chroma-api.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { DocumentRow } from '../document-row.model';
@@ -19,13 +17,7 @@ export interface EditMetadataDialogData {
 @Component({
   selector: 'app-edit-metadata-dialog',
   standalone: true,
-  imports: [
-    MatDialogModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatButtonModule,
-    ReactiveFormsModule,
-  ],
+  imports: [MatDialogModule, ReactiveFormsModule, VbTextareaComponent, VbButtonComponent],
   templateUrl: './edit-metadata-dialog.component.html',
   styleUrl: './edit-metadata-dialog.component.scss',
 })

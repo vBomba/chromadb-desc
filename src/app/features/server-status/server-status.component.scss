@@ -21,7 +21,7 @@
 
   .label {
     font-weight: 500;
-    color: var(--mat-sys-on-surface-variant, #666);
+    color: var(--vb-color-text-muted, #666);
   }
 
   .value {
@@ -29,18 +29,17 @@
     align-items: center;
     gap: 0.35rem;
 
-    mat-icon {
+    .bx {
       font-size: 1.2rem;
-      width: 1.2rem;
-      height: 1.2rem;
+      flex-shrink: 0;
     }
 
-    &.success mat-icon {
-      color: var(--mat-sys-primary, var(--eco-accent-strong));
+    &.success .bx {
+      color: var(--vb-color-action-primary, var(--eco-accent-strong));
     }
 
-    &.error mat-icon {
-      color: var(--mat-sys-error, red);
+    &.error .bx {
+      color: var(--vb-palette-red-800, #c62828);
     }
   }
 }
