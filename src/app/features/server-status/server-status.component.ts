@@ -1,11 +1,11 @@
 import { Component, inject, signal } from '@angular/core';
-import { VbButtonComponent, VbLoaderComponent } from 'vbomba-ui';
+import { VbButtonComponent, VbChipComponent, VbConnectionIndicatorComponent, VbLoaderComponent } from 'vbomba-ui';
 import { ChromaApiService, ChecklistResponse } from '../../core/services/chroma-api.service';
 
 @Component({
   selector: 'app-server-status',
   standalone: true,
-  imports: [VbButtonComponent, VbLoaderComponent],
+  imports: [VbButtonComponent, VbChipComponent, VbConnectionIndicatorComponent, VbLoaderComponent],
   templateUrl: './server-status.component.html',
   styleUrl: './server-status.component.scss',
 })

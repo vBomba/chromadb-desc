@@ -8,7 +8,7 @@
           <code>config.json</code>.
         </span>
         @if (hasStoredConfig) {
-          <span class="stored-badge" aria-live="polite">Using saved config</span>
+          <vb-chip label="Using saved config" aria-live="polite" />
         }
       </p>
     </div>
@@ -85,12 +85,25 @@
       <vb-button
         variant="filled"
         label="Save (store in browser)"
+        iconClass="bx bx-save"
         (click)="save()"
         [disabled]="form.invalid || saving || loading"
       />
-      <vb-button variant="text" label="Export config.json" (click)="exportFile()" [disabled]="form.invalid || loading" />
+      <vb-button
+        variant="text"
+        label="Export config.json"
+        iconClass="bx bx-download"
+        (click)="exportFile()"
+        [disabled]="form.invalid || loading"
+      />
       @if (hasStoredConfig) {
-        <vb-button variant="text" label="Reset to config.json" (click)="resetToFile()" [disabled]="loading" />
+        <vb-button
+          variant="text"
+          label="Reset to config.json"
+          iconClass="bx bx-reset"
+          (click)="resetToFile()"
+          [disabled]="loading"
+        />
       }
     </div>
   </div>

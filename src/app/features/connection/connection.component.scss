@@ -1,5 +1,5 @@
 .connection-card {
-  max-width: 520px;
+  max-width: 760px;
 }
 
 .status-row {
@@ -7,16 +7,6 @@
   align-items: center;
   gap: 0.5rem;
   flex-wrap: wrap;
-
-  &.success .bx {
-    color: var(--vb-color-action-primary, var(--eco-accent-strong));
-    font-size: 1.35rem;
-  }
-
-  &.error .bx {
-    color: var(--vb-palette-red-800, #c62828);
-    font-size: 1.35rem;
-  }
 
   .last-check {
     font-size: 0.875rem;
@@ -39,6 +29,13 @@
     flex-direction: column;
     gap: 0.25rem;
     font-size: 0.9rem;
+  }
+
+  .db-info__chips {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex-wrap: wrap;
   }
 }
 

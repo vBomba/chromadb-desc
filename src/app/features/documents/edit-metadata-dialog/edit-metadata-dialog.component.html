@@ -28,7 +28,14 @@
   </div>
 </mat-dialog-content>
 <mat-dialog-actions align="end">
-  <vb-button variant="text" label="Cancel" (click)="cancel()" />
-  <vb-button variant="text" label="Reset" type="button" (click)="resetToOriginal()" [disabled]="submitting" />
-  <vb-button variant="filled" label="Save" (click)="submit()" [disabled]="submitting" />
+  <vb-button variant="text" label="Cancel" iconClass="bx bx-x" (click)="cancel()" />
+  <vb-button
+    variant="text"
+    label="Reset"
+    iconClass="bx bx-reset"
+    type="button"
+    (click)="resetToOriginal()"
+    [disabled]="submitting"
+  />
+  <vb-button variant="filled" label="Save" iconClass="bx bx-save" (click)="submit()" [disabled]="submitting" />
 </mat-dialog-actions>

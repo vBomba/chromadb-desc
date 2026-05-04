@@ -5,21 +5,29 @@
       <p class="vb-panel__subtitle">Collection ID: {{ collectionId() }}</p>
     </div>
     <div class="header-actions">
-      <vb-button variant="text" type="button" routerLink="/collections" aria-label="Back to collections">
-        <i class="bx bx-arrow-back" aria-hidden="true"></i>
-      </vb-button>
       <vb-button
-        variant="text"
+        variant="icon"
+        iconClass="bx bx-arrow-back"
+        type="button"
+        routerLink="/collections"
+        ariaLabel="Back to collections"
+      />
+      <vb-button
+        variant="icon"
+        iconClass="bx bx-scatter-chart"
         type="button"
         (click)="openEmbeddingMap()"
         [disabled]="!hasEmbeddingsForMap()"
-        aria-label="Show embedding map"
-      >
-        <i class="bx bx-scatter-chart" aria-hidden="true"></i>
-      </vb-button>
-      <vb-button variant="text" color="primary" type="button" (click)="openAddDialog()" aria-label="Add document">
-        <i class="bx bx-plus" aria-hidden="true"></i>
-      </vb-button>
+        ariaLabel="Show embedding map"
+      />
+      <vb-button
+        variant="icon"
+        iconClass="bx bx-plus"
+        color="primary"
+        type="button"
+        (click)="openAddDialog()"
+        ariaLabel="Add document"
+      />
     </div>
   </header>
   <div class="vb-panel__body">
@@ -32,11 +40,21 @@
         placeholder="Find semantically similar documents"
         aria-label="Semantic search query"
       />
-      <vb-button variant="filled" label="Search vectors" (click)="runSearch()" />
+      <vb-button variant="filled" label="Search vectors" iconClass="bx bx-search" (click)="runSearch()" />
       @if (searchMode() === 'search') {
-        <vb-button variant="text" label="Clear" (click)="clearSearch()" />
+        <vb-button variant="text" label="Clear" iconClass="bx bx-x" (click)="clearSearch()" />
       }
     </div>
+    @if (searchMode() === 'search' && searchQuery().trim()) {
+      <div class="active-chips" aria-label="Active semantic search">
+        <vb-chip
+          [label]="'Semantic: ' + searchQuery().trim()"
+          removable
+          removeAriaLabel="Clear semantic search"
+          (remove)="clearSearch()"
+        />
+      </div>
+    }
     @if (searchMode() === 'list') {
       <div class="text-filter-bar">
         <vb-input
@@ -47,11 +65,27 @@
           placeholder="Substring in ID, document, metadata, embedding preview…"
           aria-label="Filter documents by substring"
         />
-        <vb-button variant="filled" type="button" label="Apply text filter" (click)="applyTextFilter()" />
+        <vb-button
+          variant="filled"
+          type="button"
+          label="Apply text filter"
+          iconClass="bx bx-filter-alt"
+          (click)="applyTextFilter()"
+        />
         @if (appliedTextFilter().trim()) {
-          <vb-button variant="text" type="button" label="Clear filter" (click)="clearTextFilter()" />
+          <vb-button variant="text" type="button" label="Clear filter" iconClass="bx bx-x" (click)="clearTextFilter()" />
         }
       </div>
+      @if (appliedTextFilter().trim()) {
+        <div class="active-chips" aria-label="Active text filters">
+          <vb-chip
+            [label]="'Text: ' + appliedTextFilter().trim()"
+            removable
+            removeAriaLabel="Clear text filter"
+            (remove)="clearTextFilter()"
+          />
+        </div>
+      }
       <div class="filter-help">
         Semantic search sends your query to Chroma vector endpoint. Text filter applies substring matching on all fields
         in this UI, with server prefilter by document text when supported.
@@ -94,9 +128,14 @@
             } @else {
               <code class="id-cell copyable" (click)="copyId(row.id, $event)" title="Copy ID">{{ row.id }}</code>
             }
-            <vb-button variant="text" type="button" (click)="copyId(row.id, $event)" aria-label="Copy ID" class="copy-btn">
-              <i class="bx bx-copy" aria-hidden="true"></i>
-            </vb-button>
+            <vb-button
+              variant="icon"
+              iconClass="bx bx-copy"
+              type="button"
+              (click)="copyId(row.id, $event)"
+              ariaLabel="Copy ID"
+              class="copy-btn"
+            />
           </td>
         </ng-container>
         <ng-container matColumnDef="document">
@@ -132,12 +171,21 @@
         <ng-container matColumnDef="actions">
           <th mat-header-cell *matHeaderCellDef>Actions</th>
           <td mat-cell *matCellDef="let row" (click)="$event.stopPropagation()">
-            <vb-button variant="text" type="button" (click)="openEditMetadataDialog(row)" aria-label="Edit metadata">
-              <i class="bx bx-edit" aria-hidden="true"></i>
-            </vb-button>
-            <vb-button variant="text" color="warn" type="button" (click)="openDeleteDialog(row)" aria-label="Delete">
-              <i class="bx bx-trash" aria-hidden="true"></i>
-            </vb-button>
+            <vb-button
+              variant="icon"
+              iconClass="bx bx-edit"
+              type="button"
+              (click)="openEditMetadataDialog(row)"
+              ariaLabel="Edit metadata"
+            />
+            <vb-button
+              variant="icon"
+              iconClass="bx bx-trash"
+              color="warn"
+              type="button"
+              (click)="openDeleteDialog(row)"
+              ariaLabel="Delete"
+            />
           </td>
         </ng-container>
         <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
@@ -155,7 +203,14 @@
         </tr>
       </table>
       <div class="bulk-actions">
-        <vb-button variant="outlined" color="warn" label="Delete selected" (click)="bulkDelete()" [disabled]="!selection.selected.length" />
+        <vb-button
+          variant="outlined"
+          color="warn"
+          label="Delete selected"
+          iconClass="bx bx-trash"
+          (click)="bulkDelete()"
+          [disabled]="!selection.selected.length"
+        />
       </div>
       @if (searchMode() === 'list') {
         <div class="paginator-bar">

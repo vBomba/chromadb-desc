@@ -15,6 +15,8 @@ import { MatSortModule, MatSort } from '@angular/material/sort';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import {
   VbButtonComponent,
+  VbChipComponent,
+  VbConnectionIndicatorComponent,
   VbInputComponent,
   VbLoaderComponent,
   VbPopupComponent,
@@ -33,6 +35,8 @@ import { DeleteCollectionDialogComponent } from '../delete-collection-dialog/del
     MatSnackBarModule,
     MatSortModule,
     VbButtonComponent,
+    VbChipComponent,
+    VbConnectionIndicatorComponent,
     VbInputComponent,
     VbLoaderComponent,
     VbPopupComponent,

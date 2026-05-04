@@ -1,13 +1,18 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { DatePipe } from '@angular/common';
-import { VbButtonComponent, VbLoaderComponent } from 'vbomba-ui';
+import {
+  VbButtonComponent,
+  VbChipComponent,
+  VbConnectionIndicatorComponent,
+  VbLoaderComponent,
+} from 'vbomba-ui';
 import { ConnectionHeartbeatService } from '../../core/services/connection-heartbeat.service';
 import { ChromaApiService, ChromaDatabase } from '../../core/services/chroma-api.service';
 
 @Component({
   selector: 'app-connection',
   standalone: true,
-  imports: [DatePipe, VbButtonComponent, VbLoaderComponent],
+  imports: [DatePipe, VbButtonComponent, VbChipComponent, VbConnectionIndicatorComponent, VbLoaderComponent],
   templateUrl: './connection.component.html',
   styleUrl: './connection.component.scss',
 })

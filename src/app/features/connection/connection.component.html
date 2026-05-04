@@ -17,25 +17,25 @@
       }
       @case ('checking') {
         <div class="status-row">
-          <vb-loader [size]="24" aria-label="Checking connection" />
+          <vb-connection-indicator status="loading" [size]="12" aria-label="Checking connection" />
           <span>Checking connection…</span>
         </div>
       }
       @case ('connected') {
         <div class="status-row success">
-          <i class="bx bx-check-circle" aria-hidden="true"></i>
+          <vb-connection-indicator status="connected" [size]="12" aria-label="Connected" />
           <span>Connection successful.</span>
           @if (heartbeat.lastCheckAt()) {
-            <span class="last-check">Last check: {{ heartbeat.lastCheckAt() | date: 'shortTime' }}</span>
+            <vb-chip [label]="'Last check: ' + (heartbeat.lastCheckAt() | date: 'shortTime')" />
           }
         </div>
       }
       @case ('disconnected') {
         <div class="status-row error">
-          <i class="bx bx-error-circle" aria-hidden="true"></i>
+          <vb-connection-indicator status="disconnected" [size]="12" aria-label="Disconnected" />
           <span>{{ heartbeat.lastError() }}</span>
           @if (heartbeat.lastCheckAt()) {
-            <span class="last-check">Last check: {{ heartbeat.lastCheckAt() | date: 'shortTime' }}</span>
+            <vb-chip [label]="'Last check: ' + (heartbeat.lastCheckAt() | date: 'shortTime')" />
           }
         </div>
       }
@@ -49,14 +49,17 @@
         </div>
       } @else if (dbError()) {
         <div class="status-row error">
-          <i class="bx bx-error-circle" aria-hidden="true"></i>
+          <vb-connection-indicator status="disconnected" [size]="12" aria-label="Database info error" />
           <span>{{ dbError() }}</span>
         </div>
       } @else if (database()) {
         <div class="db-info">
           <div><strong>Name:</strong> {{ database()!.name }}</div>
           <div><strong>ID:</strong> <code>{{ database()!.id }}</code></div>
-          <div><strong>Tenant:</strong> {{ database()!.tenant }}</div>
+          <div class="db-info__chips">
+            <strong>Tenant:</strong>
+            <vb-chip [label]="database()!.tenant" />
+          </div>
         </div>
       }
     </div>
@@ -64,10 +67,17 @@
       <vb-button
         variant="filled"
         label="Check connection"
+        iconClass="bx bx-pulse"
         (click)="checkConnection()"
         [disabled]="heartbeat.status() === 'checking'"
       />
-      <vb-button variant="text" label="Update database info" (click)="loadDatabaseInfo()" [disabled]="dbLoading()" />
+      <vb-button
+        variant="text"
+        label="Update database info"
+        iconClass="bx bx-refresh"
+        (click)="loadDatabaseInfo()"
+        [disabled]="dbLoading()"
+      />
     </div>
   </div>
 </div>

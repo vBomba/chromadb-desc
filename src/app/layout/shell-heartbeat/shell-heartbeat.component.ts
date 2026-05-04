@@ -1,17 +1,28 @@
 import { Component, inject } from '@angular/core';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { VbLoaderComponent } from 'vbomba-ui';
+import { VbConnectionIndicatorComponent, type VbConnectionStatus } from 'vbomba-ui';
 import { ConnectionHeartbeatService } from '../../core/services/connection-heartbeat.service';
 
 @Component({
   selector: 'app-shell-heartbeat',
   standalone: true,
-  imports: [MatTooltipModule, VbLoaderComponent],
+  imports: [MatTooltipModule, VbConnectionIndicatorComponent],
   templateUrl: './shell-heartbeat.component.html',
   styleUrl: './shell-heartbeat.component.scss',
 })
 export class ShellHeartbeatComponent {
   protected heartbeat = inject(ConnectionHeartbeatService);
+
+  protected indicatorStatus(): VbConnectionStatus {
+    switch (this.heartbeat.status()) {
+      case 'checking':
+        return 'loading';
+      case 'connected':
+        return 'connected';
+      default:
+        return 'disconnected';
+    }
+  }
 
   protected heartbeatTooltip(): string {
     const status = this.heartbeat.status();

@@ -4,9 +4,12 @@
       <h2 class="vb-panel__title">Collections</h2>
       <p class="vb-panel__subtitle">List of ChromaDB collections (up to 500)</p>
     </div>
-    <vb-button variant="filled" (click)="openCreatePopup()">
-      <i class="bx bx-plus" aria-hidden="true"></i>
-    </vb-button>
+    <vb-button
+      variant="icon"
+      iconClass="bx bx-plus"
+      ariaLabel="Create collection"
+      (click)="openCreatePopup()"
+    />
   </header>
   <div class="vb-panel__body">
     <div class="filters">
@@ -51,34 +54,57 @@
           <th mat-header-cell *matHeaderCellDef mat-sort-header>ID</th>
           <td mat-cell *matCellDef="let row" class="id-cell-wrapper">
             <code class="id-clip">{{ row.id }}</code>
-            <vb-button variant="text" type="button" (click)="copyId(row.id, $event)" aria-label="Copy ID">
-              <i class="bx bx-copy" aria-hidden="true"></i>
-            </vb-button>
+            <vb-button
+              variant="icon"
+              iconClass="bx bx-copy"
+              type="button"
+              ariaLabel="Copy ID"
+              (click)="copyId(row.id, $event)"
+            />
           </td>
         </ng-container>
         <ng-container matColumnDef="dimension">
           <th mat-header-cell *matHeaderCellDef mat-sort-header>Dimension</th>
-          <td mat-cell *matCellDef="let row">{{ row.dimension ?? '—' }}</td>
+          <td mat-cell *matCellDef="let row">
+            @if (row.dimension != null) {
+              <vb-chip [label]="'' + row.dimension" />
+            } @else {
+              <span>—</span>
+            }
+          </td>
         </ng-container>
         <ng-container matColumnDef="count">
           <th mat-header-cell *matHeaderCellDef mat-sort-header>Count</th>
-          <td mat-cell *matCellDef="let row">{{ getCountFor(row) }}</td>
+          <td mat-cell *matCellDef="let row">
+            <span class="count-status">
+              @if (counts.has(row.id)) {
+                <vb-connection-indicator status="connected" [size]="10" aria-label="Count loaded" />
+                <vb-chip [label]="'' + counts.get(row.id)" />
+              } @else {
+                <vb-connection-indicator status="loading" [size]="10" aria-label="Loading count" />
+                <vb-chip label="Loading" />
+              }
+            </span>
+          </td>
         </ng-container>
         <ng-container matColumnDef="actions">
           <th mat-header-cell *matHeaderCellDef>Actions</th>
           <td mat-cell *matCellDef="let row">
-            <vb-button variant="text" type="button" (click)="openCollection(row)" aria-label="Open collection">
-              <i class="bx bx-link-external" aria-hidden="true"></i>
-            </vb-button>
             <vb-button
-              variant="text"
+              variant="icon"
+              iconClass="bx bx-link-external"
+              type="button"
+              ariaLabel="Open collection"
+              (click)="openCollection(row)"
+            />
+            <vb-button
+              variant="icon"
+              iconClass="bx bx-trash"
               color="warn"
               type="button"
+              ariaLabel="Delete collection"
               (click)="openDeletePopup(row)"
-              aria-label="Delete collection"
-            >
-              <i class="bx bx-trash" aria-hidden="true"></i>
-            </vb-button>
+            />
           </td>
         </ng-container>
         <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>

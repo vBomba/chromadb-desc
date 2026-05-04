@@ -1,16 +1,3 @@
 <span class="heartbeat-indicator" [matTooltip]="heartbeatTooltip()">
-  @switch (heartbeat.status()) {
-    @case ('checking') {
-      <vb-loader [size]="20" aria-label="Checking connection" />
-    }
-    @case ('connected') {
-      <i class="bx bxs-circle status-dot connected" aria-hidden="true"></i>
-    }
-    @case ('disconnected') {
-      <i class="bx bxs-circle status-dot disconnected" aria-hidden="true"></i>
-    }
-    @case ('idle') {
-      <i class="bx bxs-circle status-dot idle" aria-hidden="true"></i>
-    }
-  }
+  <vb-connection-indicator [status]="indicatorStatus()" [size]="12" aria-label="Connection heartbeat" />
 </span>

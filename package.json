@@ -23,7 +23,7 @@
     "@fontsource/lexend": "^5.2.11",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
-    "vbomba-ui": "^0.0.2"
+    "vbomba-ui": "^0.1.0"
   },
   "devDependencies": {
     "@angular/build": "^21.2.7",

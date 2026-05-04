@@ -1,6 +1,6 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { VbButtonComponent, VbInputComponent } from 'vbomba-ui';
+import { VbButtonComponent, VbChipComponent, VbInputComponent } from 'vbomba-ui';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { ConfigService } from '../../core/services/config.service';
 import { ConnectionHeartbeatService } from '../../core/services/connection-heartbeat.service';
@@ -8,7 +8,7 @@ import { ConnectionHeartbeatService } from '../../core/services/connection-heart
 @Component({
   selector: 'app-configuration',
   standalone: true,
-  imports: [ReactiveFormsModule, VbInputComponent, VbButtonComponent, MatSnackBarModule],
+  imports: [ReactiveFormsModule, VbInputComponent, VbButtonComponent, VbChipComponent, MatSnackBarModule],
   templateUrl: './configuration.component.html',
   styleUrl: './configuration.component.scss',
 })

@@ -51,12 +51,19 @@ mat-card-header {
   flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem;
-  margin-bottom: 1rem;
+  margin-bottom: 0.65rem;
 
   .text-filter-field {
     flex: 1;
     min-width: 220px;
   }
+}
+
+.active-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: -0.25rem 0 0.85rem;
 }
 
 .filter-help {

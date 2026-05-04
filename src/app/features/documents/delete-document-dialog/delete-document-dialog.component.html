@@ -7,6 +7,13 @@
   }
 </mat-dialog-content>
 <mat-dialog-actions align="end">
-  <vb-button variant="text" label="Cancel" (click)="cancel()" />
-  <vb-button variant="filled" color="warn" label="Delete" (click)="confirm()" [disabled]="deleting" />
+  <vb-button variant="text" label="Cancel" iconClass="bx bx-x" (click)="cancel()" />
+  <vb-button
+    variant="filled"
+    color="warn"
+    label="Delete"
+    iconClass="bx bx-trash"
+    (click)="confirm()"
+    [disabled]="deleting"
+  />
 </mat-dialog-actions>

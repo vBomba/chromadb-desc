@@ -1,5 +1,5 @@
 .status-card {
-  max-width: 640px;
+  max-width: 920px;
 }
 
 .loading {
@@ -28,18 +28,6 @@
     display: flex;
     align-items: center;
     gap: 0.35rem;
-
-    .bx {
-      font-size: 1.2rem;
-      flex-shrink: 0;
-    }
-
-    &.success .bx {
-      color: var(--vb-color-action-primary, var(--eco-accent-strong));
-    }
-
-    &.error .bx {
-      color: var(--vb-palette-red-800, #c62828);
-    }
+    flex-wrap: wrap;
   }
 }

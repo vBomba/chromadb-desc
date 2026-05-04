@@ -4,7 +4,14 @@
       <h2 class="vb-panel__title">Logs</h2>
       <p class="vb-panel__subtitle">Latest API errors (last 100 entries)</p>
     </div>
-    <vb-button variant="filled" color="warn" label="Clear" (click)="clear()" [disabled]="!errorLog.logs().length" />
+    <vb-button
+      variant="filled"
+      color="warn"
+      label="Clear"
+      iconClass="bx bx-trash"
+      (click)="clear()"
+      [disabled]="!errorLog.logs().length"
+    />
   </header>
   <div class="vb-panel__body">
     @if (!errorLog.logs().length) {

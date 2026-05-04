@@ -11,10 +11,11 @@
   }
 </div>
 <div class="form-actions">
-  <vb-button variant="text" label="Cancel" (click)="onCancel()" [disabled]="submitting()" />
+  <vb-button variant="text" label="Cancel" iconClass="bx bx-x" (click)="onCancel()" [disabled]="submitting()" />
   <vb-button
     variant="filled"
     label="Create"
+    iconClass="bx bx-plus"
     (click)="submit()"
     [disabled]="nameControl.invalid || submitting()"
   />

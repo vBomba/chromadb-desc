@@ -8,6 +8,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import {
   VbButtonComponent,
   VbCheckboxComponent,
+  VbChipComponent,
   VbInputComponent,
   VbLoaderComponent,
   VbPaginatorComponent,
@@ -38,6 +39,7 @@ const PAGE_SIZE = 25;
     MatSnackBarModule,
     VbButtonComponent,
     VbCheckboxComponent,
+    VbChipComponent,
     VbInputComponent,
     VbLoaderComponent,
     VbPaginatorComponent,
