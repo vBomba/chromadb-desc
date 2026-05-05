@@ -3,9 +3,13 @@ import {
   AfterViewInit,
   ChangeDetectorRef,
   Component,
+  EventEmitter,
   ElementRef,
   Inject,
+  Input,
   OnInit,
+  Optional,
+  Output,
   ViewChild,
   inject,
   signal,
@@ -13,8 +17,8 @@ import {
 import { DestroyRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subscription } from 'rxjs';
-import { MAT_DIALOG_DATA, MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
-import { VbButtonComponent, VbLoaderComponent, VbSelectComponent, type VbSelectOption } from 'vbomba-ui';
+import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
+import { VbButtonComponent, VbLoaderComponent, VbPopupComponent, VbSelectComponent, type VbSelectOption } from 'vbomba-ui';
 import { DocumentRow } from '../document-row.model';
 import { DocumentDetailDialogComponent } from '../document-detail-dialog/document-detail-dialog.component';
 import { pca2DScores } from '../embedding-pca.util';
@@ -43,11 +47,12 @@ interface Point2D {
   standalone: true,
   imports: [
     CommonModule,
-    MatDialogModule,
     VbButtonComponent,
     VbLoaderComponent,
+    VbPopupComponent,
     VbSelectComponent,
     MatSnackBarModule,
+    DocumentDetailDialogComponent,
   ],
   templateUrl: './embedding-map-dialog.component.html',
   styleUrl: './embedding-map-dialog.component.scss',
@@ -61,6 +66,11 @@ export class EmbeddingMapDialogComponent implements OnInit, AfterViewInit {
   private cdr = inject(ChangeDetectorRef);
   private destroyRef = inject(DestroyRef);
 
+  @Input() rows: DocumentRow[] = [];
+  @Input() title = 'Documents';
+  @Input() collectionId: string | null = null;
+  @Output() closed = new EventEmitter<void>();
+
   /** Rows currently plotted (page or fetched sample). */
   protected viewRows: DocumentRow[] = [];
 
@@ -73,6 +83,8 @@ export class EmbeddingMapDialogComponent implements OnInit, AfterViewInit {
   protected neighborsLoading = signal(false);
   protected hoverTip = signal<{ left: number; top: number; text: string } | null>(null);
   protected hoveredNeighborId = signal<string | null>(null);
+  protected pointDetailOpen = signal(false);
+  protected pointDetailRow = signal<DocumentRow | null>(null);
 
   /** Neighbor IDs from Chroma `query` (collection-wide). */
   protected collectionNeighborIds = new Set<string>();
@@ -89,13 +101,13 @@ export class EmbeddingMapDialogComponent implements OnInit, AfterViewInit {
   private neighborQuerySub: Subscription | undefined;
 
   constructor(
-    private dialogRef: MatDialogRef<EmbeddingMapDialogComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: EmbeddingMapDialogData,
-    private dialog: MatDialog
+    @Optional() private dialogRef: MatDialogRef<EmbeddingMapDialogComponent> | null,
+    @Optional() @Inject(MAT_DIALOG_DATA) public data: EmbeddingMapDialogData | null
   ) {}
 
   ngOnInit(): void {
-    this.viewRows = [...this.data.rows];
+    const initialRows = this.rows.length ? this.rows : (this.data?.rows ?? []);
+    this.viewRows = [...initialRows];
   }
 
   get hasEmbeddings(): boolean {
@@ -122,7 +134,7 @@ export class EmbeddingMapDialogComponent implements OnInit, AfterViewInit {
     if (typed === 'page') {
       this.sampleFetchSub?.unsubscribe();
       this.sampleFetchSub = undefined;
-      this.viewRows = [...this.data.rows];
+      this.viewRows = [...(this.rows.length ? this.rows : (this.data?.rows ?? []))];
       this.loadingSample.set(false);
       this.cdr.markForCheck();
       requestAnimationFrame(() => this.draw());
@@ -132,7 +144,7 @@ export class EmbeddingMapDialogComponent implements OnInit, AfterViewInit {
     this.cdr.markForCheck();
     this.sampleFetchSub?.unsubscribe();
     this.sampleFetchSub = this.chroma
-      .getRecords(this.data.collectionId, {
+      .getRecords(this.activeCollectionId(), {
         where: { $and: [] },
         include: ['documents', 'metadatas', 'embeddings'],
         limit: 100,
@@ -144,7 +156,7 @@ export class EmbeddingMapDialogComponent implements OnInit, AfterViewInit {
           const rows = mapGetRecordsResponseToRows(res).filter(
             (r) => Array.isArray(r.embedding) && r.embedding.length > 0
           );
-          this.viewRows = rows.length ? rows : [...this.data.rows];
+          this.viewRows = rows.length ? rows : [...(this.rows.length ? this.rows : (this.data?.rows ?? []))];
           this.loadingSample.set(false);
           this.sampleFetchSub = undefined;
           if (!rows.length) {
@@ -257,7 +269,8 @@ export class EmbeddingMapDialogComponent implements OnInit, AfterViewInit {
   }
 
   close(): void {
-    this.dialogRef.close();
+    this.closed.emit();
+    this.dialogRef?.close();
   }
 
   onCanvasClick(event: MouseEvent): void {
@@ -274,11 +287,8 @@ export class EmbeddingMapDialogComponent implements OnInit, AfterViewInit {
     this.draw();
     this.cdr.markForCheck();
 
-    this.dialog.open(DocumentDetailDialogComponent, {
-      width: '560px',
-      maxWidth: '95vw',
-      data: { row: closest.row },
-    });
+    this.pointDetailRow.set(closest.row);
+    this.pointDetailOpen.set(true);
 
     this.fetchCollectionNeighbors(closest.row);
   }
@@ -359,14 +369,14 @@ export class EmbeddingMapDialogComponent implements OnInit, AfterViewInit {
 
   private fetchCollectionNeighbors(row: DocumentRow): void {
     const emb = this.normalizeEmbedding(row.embedding!);
-    if (!emb.length || !this.data.collectionId) return;
+    if (!emb.length || !this.activeCollectionId()) return;
 
     this.neighborsLoading.set(true);
     this.cdr.markForCheck();
 
     this.neighborQuerySub?.unsubscribe();
     this.neighborQuerySub = this.chroma
-      .queryCollection(this.data.collectionId, {
+      .queryCollection(this.activeCollectionId(), {
         query_embeddings: [emb],
         n_results: 32,
         include: ['documents', 'metadatas', 'distances'],
@@ -399,6 +409,19 @@ export class EmbeddingMapDialogComponent implements OnInit, AfterViewInit {
           this.cdr.markForCheck();
         },
       });
+  }
+
+  protected activeTitle(): string {
+    return this.title || this.data?.title || 'Documents';
+  }
+
+  protected closePointDetail(): void {
+    this.pointDetailOpen.set(false);
+    this.pointDetailRow.set(null);
+  }
+
+  private activeCollectionId(): string {
+    return this.collectionId || this.data?.collectionId || '';
   }
 
 }

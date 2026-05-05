@@ -1,6 +1,6 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { VbButtonComponent, VbChipComponent, VbInputComponent } from 'vbomba-ui';
+import { VbButtonComponent, VbChipComponent, VbInputComponent, VbLoaderComponent } from 'vbomba-ui';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { ConfigService } from '../../core/services/config.service';
 import { ConnectionHeartbeatService } from '../../core/services/connection-heartbeat.service';
@@ -8,11 +8,12 @@ import { ConnectionHeartbeatService } from '../../core/services/connection-heart
 @Component({
   selector: 'app-configuration',
   standalone: true,
-  imports: [ReactiveFormsModule, VbInputComponent, VbButtonComponent, VbChipComponent, MatSnackBarModule],
+  imports: [ReactiveFormsModule, VbInputComponent, VbButtonComponent, VbChipComponent, VbLoaderComponent, MatSnackBarModule],
   templateUrl: './configuration.component.html',
   styleUrl: './configuration.component.scss',
 })
 export class ConfigurationComponent implements OnInit {
+  private static readonly LOADING_GUARD_MS = 12000;
   private fb = inject(FormBuilder);
   private configService = inject(ConfigService);
   private heartbeat = inject(ConnectionHeartbeatService);
@@ -26,8 +27,8 @@ export class ConfigurationComponent implements OnInit {
     heartbeatIntervalMs: [30000, [Validators.required, Validators.min(5000), Validators.max(300000)]],
   });
 
-  protected saving = false;
-  protected loading = true;
+  protected saving = signal(false);
+  protected loading = signal(true);
 
   protected patchControl(control: AbstractControl, value: string): void {
     control.setValue(value);
@@ -48,9 +49,8 @@ export class ConfigurationComponent implements OnInit {
     this.form.controls.heartbeatIntervalMs.markAsTouched();
   }
 
-  async ngOnInit(): Promise<void> {
-    try {
-      const c = await this.configService.loadConfig();
+  private patchFromConfig(): Promise<void> {
+    return this.configService.loadConfig().then((c) => {
       this.form.patchValue({
         apiBaseUrl: c.apiBaseUrl,
         tenant: c.tenant,
@@ -58,10 +58,23 @@ export class ConfigurationComponent implements OnInit {
         apiKey: c.apiKey ?? '',
         heartbeatIntervalMs: c.heartbeatIntervalMs ?? 30000,
       });
+    });
+  }
+
+  async ngOnInit(): Promise<void> {
+    this.loading.set(true);
+    const guard = window.setTimeout(() => {
+      if (!this.loading()) return;
+      this.loading.set(false);
+      this.snackBar.open('Config load timed out. Please retry.', 'Close', { duration: 5000 });
+    }, ConfigurationComponent.LOADING_GUARD_MS);
+    try {
+      await this.patchFromConfig();
     } catch {
       this.snackBar.open('Could not load config', 'Close', { duration: 5000 });
     } finally {
-      this.loading = false;
+      window.clearTimeout(guard);
+      this.loading.set(false);
     }
   }
 
@@ -70,8 +83,8 @@ export class ConfigurationComponent implements OnInit {
   }
 
   protected save(): void {
-    if (this.form.invalid || this.saving) return;
-    this.saving = true;
+    if (this.form.invalid || this.saving()) return;
+    this.saving.set(true);
     const v = this.form.getRawValue();
     this.configService.saveConfig({
       apiBaseUrl: v.apiBaseUrl.trim(),
@@ -80,7 +93,7 @@ export class ConfigurationComponent implements OnInit {
       apiKey: v.apiKey?.trim() || null,
       heartbeatIntervalMs: v.heartbeatIntervalMs,
     });
-    this.saving = false;
+    this.saving.set(false);
     this.snackBar.open('Configuration saved. Restart heartbeat to apply.', 'Close', { duration: 4000 });
     this.heartbeat.stop();
     this.heartbeat.start();
@@ -89,24 +102,23 @@ export class ConfigurationComponent implements OnInit {
   protected resetToFile(): void {
     this.configService.clearSavedConfig();
     this.snackBar.open('Cleared saved config. Reloading from config.json…', 'Close', { duration: 3000 });
-    this.loading = true;
-    this.configService
-      .loadConfig()
-      .then((c) => {
-        this.form.patchValue({
-          apiBaseUrl: c.apiBaseUrl,
-          tenant: c.tenant,
-          database: c.database,
-          apiKey: c.apiKey ?? '',
-          heartbeatIntervalMs: c.heartbeatIntervalMs ?? 30000,
-        });
-        this.loading = false;
+    this.loading.set(true);
+    const guard = window.setTimeout(() => {
+      if (!this.loading()) return;
+      this.loading.set(false);
+      this.snackBar.open('Reload timed out. Please retry.', 'Close', { duration: 5000 });
+    }, ConfigurationComponent.LOADING_GUARD_MS);
+    this.patchFromConfig()
+      .then(() => {
         this.heartbeat.stop();
         this.heartbeat.start();
       })
       .catch(() => {
-        this.loading = false;
         this.snackBar.open('Failed to load config.json', 'Close', { duration: 5000 });
+      })
+      .finally(() => {
+        window.clearTimeout(guard);
+        this.loading.set(false);
       });
   }
 

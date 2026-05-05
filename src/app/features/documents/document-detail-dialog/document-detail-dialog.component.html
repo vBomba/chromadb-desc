@@ -1,5 +1,4 @@
-<h2 mat-dialog-title>Document details</h2>
-<mat-dialog-content class="detail-content">
+<div class="dialog-content detail-content">
   <section class="detail-section">
     <h3>ID</h3>
     <code class="id-block">{{ row.id }}</code>
@@ -16,7 +15,7 @@
     <h3>Embedding</h3>
     <pre class="embedding-block">{{ embeddingSummary }}</pre>
   </section>
-</mat-dialog-content>
-<mat-dialog-actions align="end">
+</div>
+<div class="dialog-actions">
   <vb-button variant="filled" label="Close" iconClass="bx bx-check" (click)="close()" />
-</mat-dialog-actions>
+</div>

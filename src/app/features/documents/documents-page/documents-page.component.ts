@@ -12,6 +12,7 @@ import {
   VbInputComponent,
   VbLoaderComponent,
   VbPaginatorComponent,
+  VbPopupComponent,
 } from 'vbomba-ui';
 import { ChromaApiService } from '../../../core/services/chroma-api.service';
 import { ErrorLogService } from '../../../core/services/error-log.service';
@@ -20,7 +21,6 @@ import { EditMetadataDialogComponent } from '../edit-metadata-dialog/edit-metada
 import { DeleteDocumentDialogComponent } from '../delete-document-dialog/delete-document-dialog.component';
 import { DocumentDetailDialogComponent } from '../document-detail-dialog/document-detail-dialog.component';
 import { EmbeddingMapDialogComponent } from '../embedding-map-dialog/embedding-map-dialog.component';
-import { MatDialog } from '@angular/material/dialog';
 import { DocumentRow } from '../document-row.model';
 import { SelectionModel } from '@angular/cdk/collections';
 import { DocumentsPageDataService } from '../documents-page-data.service';
@@ -43,6 +43,12 @@ const PAGE_SIZE = 25;
     VbInputComponent,
     VbLoaderComponent,
     VbPaginatorComponent,
+    VbPopupComponent,
+    AddDocumentDialogComponent,
+    EditMetadataDialogComponent,
+    DeleteDocumentDialogComponent,
+    DocumentDetailDialogComponent,
+    EmbeddingMapDialogComponent,
   ],
   templateUrl: './documents-page.component.html',
   styleUrl: './documents-page.component.scss',
@@ -51,7 +57,6 @@ export class DocumentsPageComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private chroma = inject(ChromaApiService);
   private docsData = inject(DocumentsPageDataService);
-  private dialog = inject(MatDialog);
   private snackBar = inject(MatSnackBar);
   private errorLog = inject(ErrorLogService);
   private sanitizer = inject(DomSanitizer);
@@ -82,6 +87,12 @@ export class DocumentsPageComponent implements OnInit {
   protected searchMode = signal<'list' | 'search'>('list');
   protected textFilterDraft = signal('');
   protected appliedTextFilter = signal('');
+  protected readonly addDialogOpen = signal(false);
+  protected readonly editDialogOpen = signal(false);
+  protected readonly deleteDialogOpen = signal(false);
+  protected readonly detailDialogOpen = signal(false);
+  protected readonly embeddingMapOpen = signal(false);
+  protected readonly activeRow = signal<DocumentRow | null>(null);
 
   protected paginatorLength = computed(() => {
     const t = this.totalEstimate();
@@ -328,34 +339,14 @@ export class DocumentsPageComponent implements OnInit {
   }
 
   protected openAddDialog(): void {
-    const cid = this.collectionId();
-    const dim = this.dimension();
-    if (!cid) return;
-    const ref = this.dialog.open(AddDocumentDialogComponent, {
-      width: '520px',
-      data: { collectionId: cid, dimension: dim },
-    });
-    ref
-      .afterClosed()
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((added) => {
-        if (added) this.refreshListAfterMutation();
-      });
+    if (!this.collectionId()) return;
+    this.addDialogOpen.set(true);
   }
 
   protected openEditMetadataDialog(row: DocumentRow): void {
-    const cid = this.collectionId();
-    if (!cid) return;
-    const ref = this.dialog.open(EditMetadataDialogComponent, {
-      width: '520px',
-      data: { collectionId: cid, documentRow: row, dimension: this.dimension() },
-    });
-    ref
-      .afterClosed()
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((updated) => {
-        if (updated) this.refreshListAfterMutation();
-      });
+    if (!this.collectionId()) return;
+    this.activeRow.set(row);
+    this.editDialogOpen.set(true);
   }
 
   protected copyId(id: string, event?: Event): void {
@@ -367,26 +358,14 @@ export class DocumentsPageComponent implements OnInit {
   }
 
   protected openDetailDialog(row: DocumentRow): void {
-    this.dialog.open(DocumentDetailDialogComponent, {
-      width: '560px',
-      maxWidth: '95vw',
-      data: { row },
-    });
+    this.activeRow.set(row);
+    this.detailDialogOpen.set(true);
   }
 
   protected openDeleteDialog(row: DocumentRow): void {
-    const cid = this.collectionId();
-    if (!cid) return;
-    const ref = this.dialog.open(DeleteDocumentDialogComponent, {
-      width: '400px',
-      data: { collectionId: cid, documentRow: row },
-    });
-    ref
-      .afterClosed()
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((deleted) => {
-        if (deleted) this.refreshListAfterMutation();
-      });
+    if (!this.collectionId()) return;
+    this.activeRow.set(row);
+    this.deleteDialogOpen.set(true);
   }
 
   protected formatMetadata(meta: Record<string, unknown> | null): string {
@@ -409,14 +388,46 @@ export class DocumentsPageComponent implements OnInit {
     }
     const cid = this.collectionId();
     if (!cid) return;
-    this.dialog.open(EmbeddingMapDialogComponent, {
-      width: '720px',
-      maxWidth: '95vw',
-      data: {
-        rows: this.dataSource.data,
-        title: this.collectionName() || 'Documents',
-        collectionId: cid,
-      },
-    });
+    this.embeddingMapOpen.set(true);
+  }
+
+  protected onAddDialogAdded(added: boolean): void {
+    this.addDialogOpen.set(false);
+    if (added) this.refreshListAfterMutation();
+  }
+
+  protected closeAddDialog(): void {
+    this.addDialogOpen.set(false);
+  }
+
+  protected onEditDialogUpdated(updated: boolean): void {
+    this.editDialogOpen.set(false);
+    this.activeRow.set(null);
+    if (updated) this.refreshListAfterMutation();
+  }
+
+  protected closeEditDialog(): void {
+    this.editDialogOpen.set(false);
+    this.activeRow.set(null);
+  }
+
+  protected onDeleteDialogDeleted(deleted: boolean): void {
+    this.deleteDialogOpen.set(false);
+    this.activeRow.set(null);
+    if (deleted) this.refreshListAfterMutation();
+  }
+
+  protected closeDeleteDialog(): void {
+    this.deleteDialogOpen.set(false);
+    this.activeRow.set(null);
+  }
+
+  protected closeDetailDialog(): void {
+    this.detailDialogOpen.set(false);
+    this.activeRow.set(null);
+  }
+
+  protected closeEmbeddingMap(): void {
+    this.embeddingMapOpen.set(false);
   }
 }

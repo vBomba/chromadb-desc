@@ -193,6 +193,16 @@ body {
   color: var(--vb-color-text-primary);
 }
 
+.vb-panel.panel-fullwidth {
+  width: 100%;
+  max-width: none;
+}
+
+.table-scroll-x {
+  width: 100%;
+  overflow-x: auto;
+}
+
 .vb-panel__head {
   display: flex;
   align-items: flex-start;

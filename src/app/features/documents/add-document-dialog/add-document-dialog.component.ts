@@ -1,5 +1,5 @@
-import { Component, inject } from '@angular/core';
-import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
+import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { VbButtonComponent, VbInputComponent, VbTextareaComponent } from 'vbomba-ui';
 import { ChromaApiService } from '../../../core/services/chroma-api.service';
@@ -16,7 +16,6 @@ export interface AddDocumentDialogData {
   selector: 'app-add-document-dialog',
   standalone: true,
   imports: [
-    MatDialogModule,
     ReactiveFormsModule,
     VbInputComponent,
     VbTextareaComponent,
@@ -26,10 +25,15 @@ export interface AddDocumentDialogData {
   styleUrl: './add-document-dialog.component.scss',
 })
 export class AddDocumentDialogComponent {
-  private dialogRef = inject(MatDialogRef<AddDocumentDialogComponent>);
+  private dialogRef = inject(MatDialogRef<AddDocumentDialogComponent>, { optional: true });
   private chroma = inject(ChromaApiService);
   private snackBar = inject(MatSnackBar);
-  protected data = inject<AddDocumentDialogData>(MAT_DIALOG_DATA);
+  private dialogData = inject<AddDocumentDialogData | null>(MAT_DIALOG_DATA, { optional: true });
+
+  @Input() collectionId: string | null = null;
+  @Input() collectionDimension: number | null = null;
+  @Output() added = new EventEmitter<boolean>();
+  @Output() cancelled = new EventEmitter<void>();
 
   protected idControl = new FormControl<string>('', {
     nonNullable: true,
@@ -40,15 +44,26 @@ export class AddDocumentDialogComponent {
   protected submitting = false;
 
   protected get dimension(): number {
-    return this.data.dimension ?? DEFAULT_DIMENSION;
+    return this.collectionDimension ?? this.dialogData?.dimension ?? DEFAULT_DIMENSION;
+  }
+
+  protected get hasUnknownDimension(): boolean {
+    return (this.collectionDimension ?? this.dialogData?.dimension) == null;
+  }
+
+  private effectiveCollectionId(): string | null {
+    return this.collectionId ?? this.dialogData?.collectionId ?? null;
   }
 
   protected cancel(): void {
-    this.dialogRef.close(false);
+    this.cancelled.emit();
+    this.dialogRef?.close(false);
   }
 
   protected submit(): void {
     if (this.idControl.invalid || this.submitting) return;
+    const collectionId = this.effectiveCollectionId();
+    if (!collectionId) return;
     const id = this.idControl.value.trim();
     const document = this.documentControl.value.trim() || null;
     let metadatas: (Record<string, unknown> | null)[] = [null];
@@ -63,7 +78,7 @@ export class AddDocumentDialogComponent {
     const embeddings = [Array(dim).fill(0)];
     this.submitting = true;
     this.chroma
-      .addRecords(this.data.collectionId, {
+      .addRecords(collectionId, {
         ids: [id],
         documents: document !== null ? [document] : undefined,
         metadatas,
@@ -72,7 +87,8 @@ export class AddDocumentDialogComponent {
       .subscribe({
         next: () => {
           this.snackBar.open('Document added', 'Close', { duration: 3000 });
-          this.dialogRef.close(true);
+          this.added.emit(true);
+          this.dialogRef?.close(true);
         },
         error: (err) => {
           this.submitting = false;

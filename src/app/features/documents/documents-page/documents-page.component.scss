@@ -90,6 +90,7 @@ mat-card-header {
 
 .documents-table {
   width: 100%;
+  min-width: 1240px;
   table-layout: fixed;
 
   .mat-header-row,
@@ -182,17 +183,25 @@ mat-card-header {
   max-width: 92px;
 }
 
-/* One toolbar row: paginator + page jump, same height as paginator */
-.paginator-bar {
+/* Footer row: bulk actions on left, paginator on right */
+.table-footer {
   display: flex;
-  align-items: stretch;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
   width: 100%;
   box-sizing: border-box;
+  margin-top: 0.35rem;
   border-top: 1px solid var(--eco-border);
   background: var(--eco-surface);
+  padding-top: 0.35rem;
 }
 
-:host ::ng-deep .paginator-bar .mat-mdc-paginator {
+.paginator-wrap {
+  margin-left: auto;
+}
+
+:host ::ng-deep .paginator-wrap .mat-mdc-paginator {
   border-top: none;
   background: transparent !important;
   flex: 1 1 auto;

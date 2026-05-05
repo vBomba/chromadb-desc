@@ -1,5 +1,4 @@
-<h2 mat-dialog-title>Add document</h2>
-<mat-dialog-content>
+<div class="dialog-content">
   <div class="field-block">
     <label class="vb-field-label" for="add-doc-id">ID</label>
     <vb-input
@@ -33,11 +32,11 @@
       [mono]="true"
     />
   </div>
-  @if (data.dimension == null) {
+  @if (hasUnknownDimension) {
     <p class="hint">Embedding dimension is unknown; using {{ dimension }}. Ensure your backend can index this.</p>
   }
-</mat-dialog-content>
-<mat-dialog-actions align="end">
+</div>
+<div class="dialog-actions">
   <vb-button variant="text" label="Cancel" iconClass="bx bx-x" (click)="cancel()" />
   <vb-button
     variant="filled"
@@ -46,4 +45,4 @@
     (click)="submit()"
     [disabled]="idControl.invalid || submitting"
   />
-</mat-dialog-actions>
+</div>

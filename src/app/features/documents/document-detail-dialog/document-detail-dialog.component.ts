@@ -1,5 +1,5 @@
-import { Component, inject } from '@angular/core';
-import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
+import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { VbButtonComponent } from 'vbomba-ui';
 import { DocumentRow } from '../document-row.model';
 
@@ -10,16 +10,27 @@ export interface DocumentDetailDialogData {
 @Component({
   selector: 'app-document-detail-dialog',
   standalone: true,
-  imports: [MatDialogModule, VbButtonComponent],
+  imports: [VbButtonComponent],
   templateUrl: './document-detail-dialog.component.html',
   styleUrl: './document-detail-dialog.component.scss',
 })
 export class DocumentDetailDialogComponent {
-  protected dialogRef = inject(MatDialogRef<DocumentDetailDialogComponent>);
-  protected data = inject<DocumentDetailDialogData>(MAT_DIALOG_DATA);
+  protected dialogRef = inject(MatDialogRef<DocumentDetailDialogComponent>, { optional: true });
+  protected dialogData = inject<DocumentDetailDialogData | null>(MAT_DIALOG_DATA, { optional: true });
+  @Input() documentRow: DocumentRow | null = null;
+  @Output() closed = new EventEmitter<void>();
 
   protected get row(): DocumentRow {
-    return this.data.row;
+    return (
+      this.documentRow ??
+      this.dialogData?.row ?? {
+        id: '',
+        document: null,
+        metadata: null,
+        embeddingPreview: null,
+        embedding: null,
+      }
+    );
   }
 
   protected formatMetadata(meta: Record<string, unknown> | null): string {
@@ -37,6 +48,7 @@ export class DocumentDetailDialogComponent {
   }
 
   protected close(): void {
-    this.dialogRef.close();
+    this.closed.emit();
+    this.dialogRef?.close();
   }
 }

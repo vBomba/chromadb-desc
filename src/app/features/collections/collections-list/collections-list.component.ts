@@ -58,7 +58,7 @@ export class CollectionsListComponent implements OnInit, AfterViewInit {
 
   protected loading = signal(true);
   protected dataSource = new MatTableDataSource<ChromaCollection>([]);
-  protected readonly displayedColumns = ['name', 'id', 'dimension', 'count', 'actions'];
+  protected readonly displayedColumns = ['tenant', 'database', 'collection', 'id', 'dimension', 'count', 'actions'];
 
   protected filterTenant = '';
   protected filterDatabase = '';
@@ -70,6 +70,14 @@ export class CollectionsListComponent implements OnInit, AfterViewInit {
   protected readonly createCollectionOpen = signal(false);
   protected readonly deleteCollectionOpen = signal(false);
   protected readonly deleteCollectionTarget = signal<ChromaCollection | null>(null);
+
+  private extractRecordCount(response: { count?: number; total?: number } | number | null): number | undefined {
+    if (response == null) return undefined;
+    if (typeof response === 'number') return response >= 0 ? response : undefined;
+    if (typeof response.count === 'number') return response.count >= 0 ? response.count : undefined;
+    if (typeof response.total === 'number') return response.total >= 0 ? response.total : undefined;
+    return undefined;
+  }
 
   constructor() {
     effect(() => {
@@ -149,9 +157,11 @@ export class CollectionsListComponent implements OnInit, AfterViewInit {
     for (const c of list) {
       this.chroma.countRecords(c.id).subscribe({
         next: (res) => {
-          const count = res.count ?? 0;
+          const count = this.extractRecordCount(
+            res as { count?: number; total?: number } | number | null
+          );
           setTimeout(() => {
-            this.counts.set(c.id, count);
+            this.counts.set(c.id, count ?? 0);
             this.cdr.detectChanges();
           }, 0);
         },

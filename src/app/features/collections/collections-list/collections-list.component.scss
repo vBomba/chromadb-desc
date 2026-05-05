@@ -42,6 +42,7 @@
 
 .collections-table {
   width: 100%;
+  min-width: 1320px;
 
   .mat-header-row,
   .mat-row {
@@ -61,10 +62,14 @@
     width: 100%;
     box-sizing: border-box;
     line-height: inherit;
+  }
+
+  .id-cell-content {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: 0.25rem;
+    min-height: 1.5rem;
 
     .id-clip {
       flex: 1;

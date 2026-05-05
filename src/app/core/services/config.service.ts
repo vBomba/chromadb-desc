@@ -1,10 +1,11 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, timeout } from 'rxjs';
 import { AppConfig } from '../config/app-config.model';
 
 const CONFIG_PATH = 'config.json';
 const STORAGE_KEY = 'chromaDesc-config';
+const CONFIG_LOAD_TIMEOUT_MS = 10000;
 
 @Injectable({ providedIn: 'root' })
 export class ConfigService {
@@ -48,9 +49,7 @@ export class ConfigService {
       return this.config;
     }
     if (this.config) return this.config;
-    const c = await firstValueFrom(
-      this.http.get<AppConfig>(CONFIG_PATH, { responseType: 'json' })
-    );
+    const c = await firstValueFrom(this.http.get<AppConfig>(CONFIG_PATH, { responseType: 'json' }).pipe(timeout(CONFIG_LOAD_TIMEOUT_MS)));
     this.config = this.normalize(c);
     return this.config;
   }

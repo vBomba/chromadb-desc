@@ -1,4 +1,4 @@
-<div class="vb-panel">
+<div class="vb-panel panel-fullwidth">
   <header class="vb-panel__head doc-header">
     <div class="vb-panel__titles">
       <h2 class="vb-panel__title">{{ collectionName() || 'Documents' }}</h2>
@@ -97,7 +97,8 @@
         <span>Loading…</span>
       </div>
     } @else {
-      <table mat-table [dataSource]="dataSource" class="documents-table">
+      <div class="table-scroll-x">
+        <table mat-table [dataSource]="dataSource" class="documents-table">
         <ng-container matColumnDef="select">
           <th mat-header-cell *matHeaderCellDef>
             <vb-checkbox
@@ -201,29 +202,79 @@
             }
           </td>
         </tr>
-      </table>
-      <div class="bulk-actions">
-        <vb-button
-          variant="outlined"
-          color="warn"
-          label="Delete selected"
-          iconClass="bx bx-trash"
-          (click)="bulkDelete()"
-          [disabled]="!selection.selected.length"
-        />
+        </table>
       </div>
-      @if (searchMode() === 'list') {
-        <div class="paginator-bar">
-          <vb-paginator
-            class="paginator-main"
-            [page]="pageIndex() + 1"
-            (pageChange)="onPaginatorPage($event)"
-            [totalItems]="paginatorLength()"
-            [pageSize]="pageSize"
-            aria-label="Documents pagination"
+      <div class="table-footer">
+        <div class="bulk-actions">
+          <vb-button
+            variant="outlined"
+            color="warn"
+            label="Delete selected"
+            iconClass="bx bx-trash"
+            (click)="bulkDelete()"
+            [disabled]="!selection.selected.length"
           />
         </div>
-      }
+        @if (searchMode() === 'list') {
+          <div class="paginator-wrap">
+            <vb-paginator
+              class="paginator-main"
+              [page]="pageIndex() + 1"
+              (pageChange)="onPaginatorPage($event)"
+              [totalItems]="paginatorLength()"
+              [pageSize]="pageSize"
+              aria-label="Documents pagination"
+            />
+          </div>
+        }
+      </div>
     }
   </div>
 </div>
+
+<vb-popup [open]="addDialogOpen()" (openChange)="closeAddDialog()" title="Add document">
+  <app-add-document-dialog
+    [collectionId]="collectionId()"
+    [collectionDimension]="dimension()"
+    (added)="onAddDialogAdded($event)"
+    (cancelled)="closeAddDialog()"
+  />
+</vb-popup>
+
+<vb-popup [open]="editDialogOpen()" (openChange)="closeEditDialog()" title="Edit metadata">
+  @if (activeRow(); as row) {
+    <app-edit-metadata-dialog
+      [collectionId]="collectionId()"
+      [documentRow]="row"
+      [collectionDimension]="dimension()"
+      (updated)="onEditDialogUpdated($event)"
+      (cancelled)="closeEditDialog()"
+    />
+  }
+</vb-popup>
+
+<vb-popup [open]="deleteDialogOpen()" (openChange)="closeDeleteDialog()" title="Delete document">
+  @if (activeRow(); as row) {
+    <app-delete-document-dialog
+      [collectionId]="collectionId()"
+      [documentRow]="row"
+      (deleted)="onDeleteDialogDeleted($event)"
+      (cancelled)="closeDeleteDialog()"
+    />
+  }
+</vb-popup>
+
+<vb-popup [open]="detailDialogOpen()" (openChange)="closeDetailDialog()" title="Document details">
+  @if (activeRow(); as row) {
+    <app-document-detail-dialog [documentRow]="row" (closed)="closeDetailDialog()" />
+  }
+</vb-popup>
+
+<vb-popup [open]="embeddingMapOpen()" (openChange)="closeEmbeddingMap()" title="Embedding map">
+  <app-embedding-map-dialog
+    [rows]="dataSource.data"
+    [title]="collectionName() || 'Documents'"
+    [collectionId]="collectionId()"
+    (closed)="closeEmbeddingMap()"
+  />
+</vb-popup>
