@@ -1,5 +1,4 @@
-<h2 mat-dialog-title>Edit metadata</h2>
-<mat-dialog-content class="edit-meta-content">
+<div class="dialog-content edit-meta-content">
   <div class="header-row">
     <div class="id-block">
       <div class="label">ID</div>
@@ -26,8 +25,8 @@
     />
     <p class="field-hint">Use valid JSON. Empty value means no metadata.</p>
   </div>
-</mat-dialog-content>
-<mat-dialog-actions align="end">
+</div>
+<div class="dialog-actions">
   <vb-button variant="text" label="Cancel" iconClass="bx bx-x" (click)="cancel()" />
   <vb-button
     variant="text"
@@ -38,4 +37,4 @@
     [disabled]="submitting"
   />
   <vb-button variant="filled" label="Save" iconClass="bx bx-save" (click)="submit()" [disabled]="submitting" />
-</mat-dialog-actions>
+</div>

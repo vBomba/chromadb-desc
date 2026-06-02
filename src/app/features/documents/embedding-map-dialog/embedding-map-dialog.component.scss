@@ -7,6 +7,13 @@
   max-height: min(92vh, 52rem);
 }
 
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
 .toolbar {
   display: flex;
   flex-wrap: wrap;
