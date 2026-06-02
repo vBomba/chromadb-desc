@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable, Subscriber, Subscription, catchError, forkJoin, map, of } from 'rxjs';
-import { ChromaApiService, GetRecordsResponse } from '../../core/services/chroma-api.service';
+import { Observable, Subscriber, Subscription, catchError, forkJoin, map, of, switchMap, throwError } from 'rxjs';
+import { ChromaApiService, GetRecordsResponse, QueryResponse } from '../../core/services/chroma-api.service';
 import { DocumentRow } from './document-row.model';
 import { mapGetRecordsResponseToRows } from './document-row.mapper';
 import {
@@ -8,6 +8,12 @@ import {
   TEXT_FILTER_MAX_SCAN,
   documentRowMatchesNeedle,
 } from './document-text-filter.util';
+
+export interface SemanticSearchResult {
+  rows: DocumentRow[];
+  /** True when query_texts failed and search used a document embedding as query vector. */
+  usedEmbeddingProxy: boolean;
+}
 
 export interface DocumentsListPageResult {
   rows: DocumentRow[];
@@ -29,6 +35,42 @@ function extractRecordCount(r: { count?: number; total?: number } | number | nul
   if (typeof r.count === 'number') return r.count >= 0 ? r.count : undefined;
   if (typeof r.total === 'number') return r.total >= 0 ? r.total : undefined;
   return undefined;
+}
+
+function mapQueryResponseToRows(res: QueryResponse): DocumentRow[] {
+  const ids = res.ids?.[0] ?? [];
+  const docs = res.documents?.[0] ?? [];
+  const metas = res.metadatas?.[0] ?? [];
+  return ids.map(
+    (id, i): DocumentRow => ({
+      id,
+      document: docs[i] ?? null,
+      metadata: metas[i] ?? null,
+      embeddingPreview: null,
+    })
+  );
+}
+
+function isQueryTextsUnsupported(err: unknown): boolean {
+  const e = err as { status?: number; error?: { message?: string }; message?: string };
+  const detail = String(e?.error?.message ?? e?.message ?? '').toLowerCase();
+  return e?.status === 422 && detail.includes('query_embeddings');
+}
+
+/** Score how well document text matches a free-text query (0..1). */
+function textSimilarityScore(query: string, text: string | null): number {
+  if (!text) return 0;
+  const q = query.toLowerCase().trim();
+  const t = text.toLowerCase();
+  if (!q) return 0;
+  if (t.includes(q)) return 1;
+  const words = q.split(/\s+/).filter(Boolean);
+  if (!words.length) return 0;
+  let hits = 0;
+  for (const w of words) {
+    if (t.includes(w)) hits++;
+  }
+  return hits / words.length;
 }
 
 /**
@@ -186,7 +228,7 @@ export class DocumentsPageDataService {
     });
   }
 
-  querySemanticSearch(collectionId: string, queryText: string, nResults = 25): Observable<DocumentRow[]> {
+  querySemanticSearch(collectionId: string, queryText: string, nResults = 25): Observable<SemanticSearchResult> {
     return this.chroma
       .queryCollection(collectionId, {
         query_texts: [queryText],
@@ -194,19 +236,109 @@ export class DocumentsPageDataService {
         include: ['documents', 'metadatas', 'distances'],
       })
       .pipe(
-        map((res) => {
-          const ids = res.ids?.[0] ?? [];
-          const docs = res.documents?.[0] ?? [];
-          const metas = res.metadatas?.[0] ?? [];
-          return ids.map(
-            (id, i): DocumentRow => ({
-              id,
-              document: docs[i] ?? null,
-              metadata: metas[i] ?? null,
-              embeddingPreview: null,
-            })
-          );
+        map((res) => ({ rows: mapQueryResponseToRows(res), usedEmbeddingProxy: false })),
+        catchError((err) => {
+          if (!isQueryTextsUnsupported(err)) {
+            return throwError(() => err);
+          }
+          return this.querySemanticSearchViaEmbeddings(collectionId, queryText, nResults);
         })
       );
+  }
+
+  /**
+   * Chroma REST API v2 accepts only query_embeddings. When query_texts is rejected,
+   * pick the best-matching document embedding from a scan and use it as the query vector.
+   */
+  private querySemanticSearchViaEmbeddings(
+    collectionId: string,
+    queryText: string,
+    nResults: number
+  ): Observable<SemanticSearchResult> {
+    return this.findBestQueryEmbedding(collectionId, queryText).pipe(
+      switchMap((embedding) => {
+        if (!embedding) {
+          return throwError(
+            () =>
+              new Error(
+                'No embeddings found in collection. Add documents with embeddings or use the text filter.'
+              )
+          );
+        }
+        return this.chroma
+          .queryCollection(collectionId, {
+            query_embeddings: [embedding],
+            n_results: nResults,
+            include: ['documents', 'metadatas', 'distances'],
+          })
+          .pipe(map((res) => ({ rows: mapQueryResponseToRows(res), usedEmbeddingProxy: true })));
+      })
+    );
+  }
+
+  /** Scan up to TEXT_FILTER_MAX_SCAN records to find the embedding closest in document text. */
+  private findBestQueryEmbedding(collectionId: string, queryText: string): Observable<number[] | null> {
+    return new Observable<number[] | null>((subscriber) => {
+      let offset = 0;
+      let cancelled = false;
+      let innerSub: Subscription | undefined;
+      let bestScore = -1;
+      let bestEmbedding: number[] | null = null;
+
+      const finish = () => {
+        if (cancelled || subscriber.closed) return;
+        subscriber.next(bestEmbedding);
+        subscriber.complete();
+      };
+
+      const step = () => {
+        if (cancelled || subscriber.closed) return;
+        const limit = Math.min(TEXT_FILTER_BATCH, TEXT_FILTER_MAX_SCAN - offset);
+        if (limit <= 0) {
+          finish();
+          return;
+        }
+        innerSub = this.chroma
+          .getRecords(collectionId, {
+            where: { $and: [] },
+            include: ['documents', 'embeddings'],
+            limit,
+            offset,
+          })
+          .subscribe({
+            next: (res) => {
+              if (cancelled) return;
+              const rows = mapGetRecordsResponseToRows(res);
+              for (const row of rows) {
+                const emb = row.embedding;
+                if (!Array.isArray(emb) || emb.length === 0) continue;
+                const score = textSimilarityScore(queryText, row.document);
+                if (score > bestScore) {
+                  bestScore = score;
+                  bestEmbedding = emb;
+                }
+              }
+              offset += rows.length;
+              const fullBatch = rows.length === limit;
+              if (fullBatch && offset < TEXT_FILTER_MAX_SCAN) {
+                step();
+              } else {
+                finish();
+              }
+            },
+            error: (err) => {
+              if (cancelled || subscriber.closed) return;
+              subscriber.error(err);
+            },
+          });
+      };
+
+      step();
+
+      return () => {
+        cancelled = true;
+        innerSub?.unsubscribe();
+      };
+    });
   }
 }

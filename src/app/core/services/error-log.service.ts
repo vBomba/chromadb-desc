@@ -53,7 +53,14 @@ export class ErrorLogService {
     } else if (e?.status === 404) {
       hint = 'Перевірте tenant та database в Configuration.';
     } else if (e?.status === 0 || (typeof detail === 'string' && detail.toLowerCase().includes('fetch'))) {
-      hint = 'Можлива CORS або мережа. Спробуйте локальний проксі (proxy.conf.js).';
+      hint = 'ChromaDB недоступний. Запустіть сервер (docker compose up) або перевірте apiBaseUrl у Configuration.';
+    } else if (
+      e?.status === 422 &&
+      typeof detail === 'string' &&
+      detail.toLowerCase().includes('query_embeddings')
+    ) {
+      hint =
+        'Chroma REST API v2 не приймає query_texts — потрібні query_embeddings. Переконайтесь, що в колекції є embeddings.';
     }
     return { message, detail: String(detail), hint };
   }

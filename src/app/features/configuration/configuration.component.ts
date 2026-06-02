@@ -1,14 +1,21 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { VbButtonComponent, VbChipComponent, VbInputComponent } from 'vbomba-ui';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { VbAlertComponent, VbButtonComponent, VbChipComponent, VbInputComponent, VbSliderComponent } from 'vbomba-ui';
 import { ConfigService } from '../../core/services/config.service';
+import { AppToastService } from '../../core/services/app-toast.service';
 import { ConnectionHeartbeatService } from '../../core/services/connection-heartbeat.service';
 
 @Component({
   selector: 'app-configuration',
   standalone: true,
-  imports: [ReactiveFormsModule, VbInputComponent, VbButtonComponent, VbChipComponent, MatSnackBarModule],
+  imports: [
+    ReactiveFormsModule,
+    VbAlertComponent,
+    VbInputComponent,
+    VbButtonComponent,
+    VbChipComponent,
+    VbSliderComponent,
+  ],
   templateUrl: './configuration.component.html',
   styleUrl: './configuration.component.scss',
 })
@@ -16,7 +23,7 @@ export class ConfigurationComponent implements OnInit {
   private fb = inject(FormBuilder);
   private configService = inject(ConfigService);
   private heartbeat = inject(ConnectionHeartbeatService);
-  private snackBar = inject(MatSnackBar);
+  private toast = inject(AppToastService);
 
   protected form = this.fb.nonNullable.group({
     apiBaseUrl: ['', Validators.required],
@@ -34,17 +41,8 @@ export class ConfigurationComponent implements OnInit {
     control.markAsTouched();
   }
 
-  protected heartbeatDisplay(): string {
-    return String(this.form.controls.heartbeatIntervalMs.value);
-  }
-
-  protected patchHeartbeat(raw: string): void {
-    const n = parseInt(raw, 10);
-    if (Number.isFinite(n)) {
-      this.form.controls.heartbeatIntervalMs.setValue(n);
-    } else {
-      this.form.controls.heartbeatIntervalMs.setValue(this.form.controls.heartbeatIntervalMs.value);
-    }
+  protected patchHeartbeat(value: number): void {
+    this.form.controls.heartbeatIntervalMs.setValue(value);
     this.form.controls.heartbeatIntervalMs.markAsTouched();
   }
 
@@ -59,7 +57,7 @@ export class ConfigurationComponent implements OnInit {
         heartbeatIntervalMs: c.heartbeatIntervalMs ?? 30000,
       });
     } catch {
-      this.snackBar.open('Could not load config', 'Close', { duration: 5000 });
+      this.toast.error('Could not load config');
     } finally {
       this.loading = false;
     }
@@ -81,14 +79,14 @@ export class ConfigurationComponent implements OnInit {
       heartbeatIntervalMs: v.heartbeatIntervalMs,
     });
     this.saving = false;
-    this.snackBar.open('Configuration saved. Restart heartbeat to apply.', 'Close', { duration: 4000 });
+    this.toast.success('Configuration saved. Restart heartbeat to apply.');
     this.heartbeat.stop();
     this.heartbeat.start();
   }
 
   protected resetToFile(): void {
     this.configService.clearSavedConfig();
-    this.snackBar.open('Cleared saved config. Reloading from config.json…', 'Close', { duration: 3000 });
+    this.toast.info('Cleared saved config. Reloading from config.json…', 3000);
     this.loading = true;
     this.configService
       .loadConfig()
@@ -106,7 +104,7 @@ export class ConfigurationComponent implements OnInit {
       })
       .catch(() => {
         this.loading = false;
-        this.snackBar.open('Failed to load config.json', 'Close', { duration: 5000 });
+        this.toast.error('Failed to load config.json');
       });
   }
 
@@ -133,6 +131,6 @@ export class ConfigurationComponent implements OnInit {
     a.download = 'config.json';
     a.click();
     URL.revokeObjectURL(a.href);
-    this.snackBar.open('config.json downloaded', 'Close', { duration: 3000 });
+    this.toast.success('config.json downloaded', 3000);
   }
 }

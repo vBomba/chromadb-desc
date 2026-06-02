@@ -4,17 +4,25 @@ import {
   ChangeDetectorRef,
   Component,
   ElementRef,
-  Inject,
   OnInit,
   ViewChild,
+  effect,
   inject,
+  input,
+  model,
   signal,
+  untracked,
 } from '@angular/core';
 import { DestroyRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subscription } from 'rxjs';
-import { MAT_DIALOG_DATA, MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
-import { VbButtonComponent, VbLoaderComponent, VbSelectComponent, type VbSelectOption } from 'vbomba-ui';
+import {
+  VbButtonComponent,
+  VbLoaderComponent,
+  VbPopupComponent,
+  VbSelectComponent,
+  type VbSelectOption,
+} from 'vbomba-ui';
 import { DocumentRow } from '../document-row.model';
 import { DocumentDetailDialogComponent } from '../document-detail-dialog/document-detail-dialog.component';
 import { pca2DScores } from '../embedding-pca.util';
@@ -22,15 +30,9 @@ import { cosineDistance } from '../embedding-similarity.util';
 import { mapGetRecordsResponseToRows } from '../document-row.mapper';
 import { ChromaApiService } from '../../../core/services/chroma-api.service';
 import { ErrorLogService } from '../../../core/services/error-log.service';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { AppToastService } from '../../../core/services/app-toast.service';
 
 export type EmbeddingMapSourceMode = 'page' | 'sample100';
-
-export interface EmbeddingMapDialogData {
-  rows: DocumentRow[];
-  title: string;
-  collectionId: string;
-}
 
 interface Point2D {
   x: number;
@@ -43,11 +45,11 @@ interface Point2D {
   standalone: true,
   imports: [
     CommonModule,
-    MatDialogModule,
+    DocumentDetailDialogComponent,
     VbButtonComponent,
     VbLoaderComponent,
+    VbPopupComponent,
     VbSelectComponent,
-    MatSnackBarModule,
   ],
   templateUrl: './embedding-map-dialog.component.html',
   styleUrl: './embedding-map-dialog.component.scss',
@@ -56,10 +58,15 @@ export class EmbeddingMapDialogComponent implements OnInit, AfterViewInit {
   @ViewChild('canvas', { static: false }) canvasRef?: ElementRef<HTMLCanvasElement>;
 
   private chroma = inject(ChromaApiService);
-  private snackBar = inject(MatSnackBar);
+  private toast = inject(AppToastService);
   private errorLog = inject(ErrorLogService);
   private cdr = inject(ChangeDetectorRef);
   private destroyRef = inject(DestroyRef);
+
+  open = model(false);
+  rows = input<DocumentRow[]>([]);
+  title = input('');
+  collectionId = input('');
 
   /** Rows currently plotted (page or fetched sample). */
   protected viewRows: DocumentRow[] = [];
@@ -73,6 +80,8 @@ export class EmbeddingMapDialogComponent implements OnInit, AfterViewInit {
   protected neighborsLoading = signal(false);
   protected hoverTip = signal<{ left: number; top: number; text: string } | null>(null);
   protected hoveredNeighborId = signal<string | null>(null);
+  protected detailOpen = model(false);
+  protected detailRow = signal<DocumentRow | null>(null);
 
   /** Neighbor IDs from Chroma `query` (collection-wide). */
   protected collectionNeighborIds = new Set<string>();
@@ -88,14 +97,20 @@ export class EmbeddingMapDialogComponent implements OnInit, AfterViewInit {
   private sampleFetchSub: Subscription | undefined;
   private neighborQuerySub: Subscription | undefined;
 
-  constructor(
-    private dialogRef: MatDialogRef<EmbeddingMapDialogComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: EmbeddingMapDialogData,
-    private dialog: MatDialog
-  ) {}
+  constructor() {
+    effect(() => {
+      if (!this.open()) return;
+      untracked(() => {
+        this.resetMapState();
+        this.viewRows = [...this.rows()];
+        this.cdr.markForCheck();
+        requestAnimationFrame(() => requestAnimationFrame(() => this.draw()));
+      });
+    });
+  }
 
   ngOnInit(): void {
-    this.viewRows = [...this.data.rows];
+    this.viewRows = [...this.rows()];
   }
 
   get hasEmbeddings(): boolean {
@@ -103,10 +118,17 @@ export class EmbeddingMapDialogComponent implements OnInit, AfterViewInit {
   }
 
   ngAfterViewInit(): void {
-    if (!this.hasEmbeddings) return;
+    if (!this.open() || !this.hasEmbeddings) return;
     requestAnimationFrame(() => {
       requestAnimationFrame(() => this.draw());
     });
+  }
+
+  protected onPopupClosed(): void {
+    this.sampleFetchSub?.unsubscribe();
+    this.neighborQuerySub?.unsubscribe();
+    this.sampleFetchSub = undefined;
+    this.neighborQuerySub = undefined;
   }
 
   protected onSourceModeChange(mode: string): void {
@@ -122,7 +144,7 @@ export class EmbeddingMapDialogComponent implements OnInit, AfterViewInit {
     if (typed === 'page') {
       this.sampleFetchSub?.unsubscribe();
       this.sampleFetchSub = undefined;
-      this.viewRows = [...this.data.rows];
+      this.viewRows = [...this.rows()];
       this.loadingSample.set(false);
       this.cdr.markForCheck();
       requestAnimationFrame(() => this.draw());
@@ -132,7 +154,7 @@ export class EmbeddingMapDialogComponent implements OnInit, AfterViewInit {
     this.cdr.markForCheck();
     this.sampleFetchSub?.unsubscribe();
     this.sampleFetchSub = this.chroma
-      .getRecords(this.data.collectionId, {
+      .getRecords(this.collectionId(), {
         where: { $and: [] },
         include: ['documents', 'metadatas', 'embeddings'],
         limit: 100,
@@ -144,11 +166,11 @@ export class EmbeddingMapDialogComponent implements OnInit, AfterViewInit {
           const rows = mapGetRecordsResponseToRows(res).filter(
             (r) => Array.isArray(r.embedding) && r.embedding.length > 0
           );
-          this.viewRows = rows.length ? rows : [...this.data.rows];
+          this.viewRows = rows.length ? rows : [...this.rows()];
           this.loadingSample.set(false);
           this.sampleFetchSub = undefined;
           if (!rows.length) {
-            this.snackBar.open('No embeddings in the first 100 records', 'Close', { duration: 4000 });
+            this.toast.warn('No embeddings in the first 100 records', 4000);
           }
           this.cdr.markForCheck();
           requestAnimationFrame(() => this.draw());
@@ -158,7 +180,7 @@ export class EmbeddingMapDialogComponent implements OnInit, AfterViewInit {
           this.sampleFetchSub = undefined;
           const { message, detail, hint } = ErrorLogService.messageFromError(err);
           this.errorLog.push(`Embedding map sample: ${message}`, detail, hint);
-          this.snackBar.open('Failed to load sample', 'Close', { duration: 5000 });
+          this.toast.error('Failed to load sample');
           this.cdr.markForCheck();
         },
       });
@@ -257,7 +279,7 @@ export class EmbeddingMapDialogComponent implements OnInit, AfterViewInit {
   }
 
   close(): void {
-    this.dialogRef.close();
+    this.open.set(false);
   }
 
   onCanvasClick(event: MouseEvent): void {
@@ -274,11 +296,8 @@ export class EmbeddingMapDialogComponent implements OnInit, AfterViewInit {
     this.draw();
     this.cdr.markForCheck();
 
-    this.dialog.open(DocumentDetailDialogComponent, {
-      width: '560px',
-      maxWidth: '95vw',
-      data: { row: closest.row },
-    });
+    this.detailRow.set(closest.row);
+    this.detailOpen.set(true);
 
     this.fetchCollectionNeighbors(closest.row);
   }
@@ -316,6 +335,19 @@ export class EmbeddingMapDialogComponent implements OnInit, AfterViewInit {
   onNeighborRowLeave(): void {
     this.hoveredNeighborId.set(null);
     this.draw();
+  }
+
+  private resetMapState(): void {
+    this.sourceMode.set('page');
+    this.selected = null;
+    this.collectionNeighborIds.clear();
+    this.collectionNeighbors = [];
+    this.localNeighborIds.clear();
+    this.hoverTip.set(null);
+    this.hoveredNeighborId.set(null);
+    this.loadingSample.set(false);
+    this.neighborsLoading.set(false);
+    this.points = [];
   }
 
   private hitTest(event: MouseEvent, radius = 15): Point2D | null {
@@ -359,14 +391,14 @@ export class EmbeddingMapDialogComponent implements OnInit, AfterViewInit {
 
   private fetchCollectionNeighbors(row: DocumentRow): void {
     const emb = this.normalizeEmbedding(row.embedding!);
-    if (!emb.length || !this.data.collectionId) return;
+    if (!emb.length || !this.collectionId()) return;
 
     this.neighborsLoading.set(true);
     this.cdr.markForCheck();
 
     this.neighborQuerySub?.unsubscribe();
     this.neighborQuerySub = this.chroma
-      .queryCollection(this.data.collectionId, {
+      .queryCollection(this.collectionId(), {
         query_embeddings: [emb],
         n_results: 32,
         include: ['documents', 'metadatas', 'distances'],
@@ -393,12 +425,9 @@ export class EmbeddingMapDialogComponent implements OnInit, AfterViewInit {
           this.neighborQuerySub = undefined;
           const { message, detail, hint } = ErrorLogService.messageFromError(err);
           this.errorLog.push(`Embedding neighbors query: ${message}`, detail, hint);
-          this.snackBar.open('Could not load collection neighbors (using page only)', 'Close', {
-            duration: 5000,
-          });
+          this.toast.warn('Could not load collection neighbors (using page only)');
           this.cdr.markForCheck();
         },
       });
   }
-
 }

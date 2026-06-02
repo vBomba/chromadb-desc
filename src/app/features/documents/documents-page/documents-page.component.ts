@@ -1,19 +1,23 @@
-import { Component, inject, signal, computed, OnInit, DestroyRef } from '@angular/core';
+import { Component, inject, signal, computed, model, OnInit, DestroyRef } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subscription } from 'rxjs';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { MatTableModule, MatTableDataSource } from '@angular/material/table';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import {
+  VbAlertComponent,
   VbButtonComponent,
+  VbCardComponent,
   VbCheckboxComponent,
   VbChipComponent,
+  VbEmptyStateComponent,
   VbInputComponent,
   VbLoaderComponent,
   VbPaginatorComponent,
+  type VbTabItem,
 } from 'vbomba-ui';
 import { ChromaApiService } from '../../../core/services/chroma-api.service';
+import { AppToastService } from '../../../core/services/app-toast.service';
 import { ErrorLogService } from '../../../core/services/error-log.service';
 import { AddDocumentDialogComponent } from '../add-document-dialog/add-document-dialog.component';
 import { EditMetadataDialogComponent } from '../edit-metadata-dialog/edit-metadata-dialog.component';
@@ -36,13 +40,17 @@ const PAGE_SIZE = 25;
   imports: [
     RouterLink,
     MatTableModule,
-    MatSnackBarModule,
+    VbAlertComponent,
     VbButtonComponent,
     VbCheckboxComponent,
     VbChipComponent,
+    VbEmptyStateComponent,
     VbInputComponent,
     VbLoaderComponent,
     VbPaginatorComponent,
+    VbCardComponent,
+    EmbeddingMapDialogComponent,
+    DocumentDetailDialogComponent,
   ],
   templateUrl: './documents-page.component.html',
   styleUrl: './documents-page.component.scss',
@@ -52,7 +60,7 @@ export class DocumentsPageComponent implements OnInit {
   private chroma = inject(ChromaApiService);
   private docsData = inject(DocumentsPageDataService);
   private dialog = inject(MatDialog);
-  private snackBar = inject(MatSnackBar);
+  private toast = inject(AppToastService);
   private errorLog = inject(ErrorLogService);
   private sanitizer = inject(DomSanitizer);
   private destroyRef = inject(DestroyRef);
@@ -82,6 +90,30 @@ export class DocumentsPageComponent implements OnInit {
   protected searchMode = signal<'list' | 'search'>('list');
   protected textFilterDraft = signal('');
   protected appliedTextFilter = signal('');
+  protected documentsViewTab = model<'browse' | 'semantic' | 'filter'>('browse');
+  protected embeddingMapOpen = model(false);
+  protected detailOpen = model(false);
+  protected detailRow = signal<DocumentRow | null>(null);
+
+  protected readonly documentsViewTabs: VbTabItem[] = [
+    { value: 'browse', label: 'Browse', iconClass: 'bx bx-list-ul' },
+    { value: 'semantic', label: 'Vector search', iconClass: 'bx bx-search' },
+    { value: 'filter', label: 'Text filter', iconClass: 'bx bx-filter-alt' },
+  ];
+
+  protected showEmptyState = computed(() => !this.loading() && this.dataSource.data.length === 0);
+
+  protected emptyStateTitle = computed(() => {
+    if (this.searchMode() === 'search') return 'No vector search results';
+    if (this.hasTextFilter()) return 'No documents match this filter';
+    return 'No documents yet';
+  });
+
+  protected emptyStateDescription = computed(() => {
+    if (this.searchMode() === 'search') return 'Try another query or switch to text filter.';
+    if (this.hasTextFilter()) return 'Refine the substring or clear the filter.';
+    return 'Add a document to populate this collection.';
+  });
 
   protected paginatorLength = computed(() => {
     const t = this.totalEstimate();
@@ -106,6 +138,36 @@ export class DocumentsPageComponent implements OnInit {
     this.loadPage(0);
   }
 
+  protected onDocumentsViewTabChange(tab: string): void {
+    if (tab === 'browse') {
+      this.searchQuery.set('');
+      this.searchMode.set('list');
+      this.textFilterDraft.set('');
+      this.appliedTextFilter.set('');
+      this.filteredRowsCache = [];
+      this.pageIndex.set(0);
+      this.loadPage(0);
+      return;
+    }
+    if (tab === 'semantic') {
+      this.textFilterDraft.set('');
+      this.appliedTextFilter.set('');
+      this.filteredRowsCache = [];
+      this.searchMode.set('list');
+      this.pageIndex.set(0);
+      this.loadPage(0);
+      return;
+    }
+    if (tab === 'filter') {
+      this.searchQuery.set('');
+      this.searchMode.set('list');
+      this.pageIndex.set(0);
+      if (!this.hasTextFilter()) {
+        this.loadPage(0);
+      }
+    }
+  }
+
   protected onPaginatorPage(pageOneBased: number): void {
     const idx = pageOneBased - 1;
     this.pageIndex.set(idx);
@@ -125,6 +187,7 @@ export class DocumentsPageComponent implements OnInit {
   }
 
   protected applyTextFilter(): void {
+    this.documentsViewTab.set('filter');
     const q = this.textFilterDraft().trim();
     this.appliedTextFilter.set(q);
     if (!q) {
@@ -182,7 +245,7 @@ export class DocumentsPageComponent implements OnInit {
           this.loading.set(false);
           const { message, detail, hint } = ErrorLogService.messageFromError(err);
           this.errorLog.push(`Documents: ${message}`, detail, hint);
-          this.snackBar.open('Failed to load documents', 'Close', { duration: 5000 });
+          this.toast.error('Failed to load documents');
         },
       });
   }
@@ -210,10 +273,8 @@ export class DocumentsPageComponent implements OnInit {
           this.pageIndex.set(0);
           this.applyFilteredPageSlice(0);
           if (truncated) {
-            this.snackBar.open(
-              `Text filter: only the first ${TEXT_FILTER_MAX_SCAN.toLocaleString()} records were scanned. Refine the filter if needed.`,
-              'Close',
-              { duration: 8000 }
+            this.toast.warn(
+              `Text filter: only the first ${TEXT_FILTER_MAX_SCAN.toLocaleString()} records were scanned. Refine the filter if needed.`
             );
           }
         },
@@ -221,7 +282,7 @@ export class DocumentsPageComponent implements OnInit {
           this.loading.set(false);
           const { message, detail, hint } = ErrorLogService.messageFromError(err);
           this.errorLog.push(`Text filter: ${message}`, detail, hint);
-          this.snackBar.open('Failed to scan collection', 'Close', { duration: 5000 });
+          this.toast.error('Failed to scan collection');
         },
       });
   }
@@ -239,21 +300,25 @@ export class DocumentsPageComponent implements OnInit {
     const q = this.searchQuery().trim();
     if (!cid || !q) return;
     this.searchMode.set('search');
+    this.documentsViewTab.set('semantic');
     this.loading.set(true);
     this.searchSub?.unsubscribe();
     this.searchSub = this.docsData
       .querySemanticSearch(cid, q)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (rows) => {
+        next: ({ rows, usedEmbeddingProxy }) => {
           this.dataSource.data = rows;
           this.loading.set(false);
+          if (usedEmbeddingProxy) {
+            this.toast.info('REST API не підтримує query_texts — використано embedding найближчого документа.');
+          }
         },
         error: (err) => {
           this.loading.set(false);
           const { message, detail, hint } = ErrorLogService.messageFromError(err);
           this.errorLog.push(`Search: ${message}`, detail, hint);
-          this.snackBar.open('Search failed', 'Close', { duration: 5000 });
+          this.toast.error('Search failed');
         },
       });
   }
@@ -300,7 +365,7 @@ export class DocumentsPageComponent implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: () => {
-          this.snackBar.open(`Deleted ${ids.length} documents`, 'Close', { duration: 4000 });
+          this.toast.success(`Deleted ${ids.length} documents`);
           this.selection.clear();
           if (this.hasTextFilter()) {
             const idSet = new Set(ids);
@@ -322,7 +387,7 @@ export class DocumentsPageComponent implements OnInit {
           this.loading.set(false);
           const { message, detail, hint } = ErrorLogService.messageFromError(err);
           this.errorLog.push(`Bulk delete: ${message}`, detail, hint);
-          this.snackBar.open('Bulk delete failed', 'Close', { duration: 5000 });
+          this.toast.error('Bulk delete failed');
         },
       });
   }
@@ -361,17 +426,14 @@ export class DocumentsPageComponent implements OnInit {
   protected copyId(id: string, event?: Event): void {
     if (event) (event as Event).stopPropagation();
     navigator.clipboard.writeText(id).then(
-      () => this.snackBar.open('ID copied', 'Close', { duration: 2000 }),
-      () => this.snackBar.open('Copy failed', 'Close', { duration: 3000 })
+      () => this.toast.success('ID copied', 2000),
+      () => this.toast.error('Copy failed', 3000)
     );
   }
 
   protected openDetailDialog(row: DocumentRow): void {
-    this.dialog.open(DocumentDetailDialogComponent, {
-      width: '560px',
-      maxWidth: '95vw',
-      data: { row },
-    });
+    this.detailRow.set(row);
+    this.detailOpen.set(true);
   }
 
   protected openDeleteDialog(row: DocumentRow): void {
@@ -404,19 +466,10 @@ export class DocumentsPageComponent implements OnInit {
 
   protected openEmbeddingMap(): void {
     if (!this.hasEmbeddingsForMap()) {
-      this.snackBar.open('No embeddings on current page', 'Close', { duration: 3000 });
+      this.toast.warn('No embeddings on current page', 3000);
       return;
     }
-    const cid = this.collectionId();
-    if (!cid) return;
-    this.dialog.open(EmbeddingMapDialogComponent, {
-      width: '720px',
-      maxWidth: '95vw',
-      data: {
-        rows: this.dataSource.data,
-        title: this.collectionName() || 'Documents',
-        collectionId: cid,
-      },
-    });
+    if (!this.collectionId()) return;
+    this.embeddingMapOpen.set(true);
   }
 }

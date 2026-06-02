@@ -590,7 +590,7 @@ body.app-dark-theme .mat-mdc-checkbox .mat-mdc-checkbox-ripple {
   border-radius: 8px;
 }
 
-/* Dense mat-checkbox + action icons inside data tables */
+/* Dense checkboxes inside data tables (vb-checkbox + legacy mat-checkbox) */
 .mat-mdc-table .mat-mdc-checkbox {
   --mat-checkbox-state-layer-size: 24px;
   --mat-checkbox-touch-target-size: 30px;
@@ -598,14 +598,34 @@ body.app-dark-theme .mat-mdc-checkbox .mat-mdc-checkbox-ripple {
 
 .mat-mdc-table td.mat-column-select,
 .mat-mdc-table th.mat-column-select {
+  width: 48px;
+  min-width: 48px;
+  max-width: 48px;
   text-align: center;
   vertical-align: middle;
-  padding-inline: 0.2rem;
+  padding-inline: 0.35rem;
+  overflow: visible;
+}
+
+.mat-mdc-table td.mat-column-select .mat-mdc-checkbox,
+.mat-mdc-table td.mat-column-select vb-checkbox,
+.mat-mdc-table th.mat-column-select vb-checkbox {
+  display: inline-flex;
+  justify-content: center;
+  vertical-align: middle;
 }
 
 .mat-mdc-table td.mat-column-select .mat-mdc-checkbox {
   display: inline-flex;
   justify-content: center;
+}
+
+.mat-mdc-table .mat-column-select .vb-checkbox {
+  gap: 0;
+}
+
+.mat-mdc-table .mat-column-select .vb-checkbox__label:empty {
+  display: none;
 }
 
 .mat-mdc-table td.mat-column-actions,
@@ -666,7 +686,8 @@ body.app-dark-theme .mat-mdc-button-base.mat-unthemed:not(.mat-mdc-icon-button):
 
 /* Icon buttons: flat, centered icon, single hover layer (copy + table actions) */
 .mat-mdc-icon-button.mat-unthemed,
-.mat-mdc-icon-button.copy-btn {
+.mat-mdc-icon-button.copy-btn,
+.mat-mdc-table vb-button.table-icon-btn .mat-mdc-icon-button {
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -687,23 +708,27 @@ body.app-dark-theme .mat-mdc-button-base.mat-unthemed:not(.mat-mdc-icon-button):
 }
 
 .mat-mdc-icon-button.mat-unthemed .mat-mdc-button-persistent-ripple::before,
-.mat-mdc-icon-button.copy-btn .mat-mdc-button-persistent-ripple::before {
+.mat-mdc-icon-button.copy-btn .mat-mdc-button-persistent-ripple::before,
+.mat-mdc-table vb-button.table-icon-btn .mat-mdc-icon-button .mat-mdc-button-persistent-ripple::before {
   background-color: transparent !important;
 }
 
 .mat-mdc-icon-button.mat-unthemed:hover .mat-mdc-button-persistent-ripple::before,
-.mat-mdc-icon-button.copy-btn:hover .mat-mdc-button-persistent-ripple::before {
+.mat-mdc-icon-button.copy-btn:hover .mat-mdc-button-persistent-ripple::before,
+.mat-mdc-table vb-button.table-icon-btn:hover .mat-mdc-icon-button .mat-mdc-button-persistent-ripple::before {
   background-color: color-mix(in srgb, var(--eco-accent) 16%, transparent) !important;
   opacity: 1 !important;
 }
 
 body.app-dark-theme .mat-mdc-icon-button.mat-unthemed,
-body.app-dark-theme .mat-mdc-icon-button.copy-btn {
+body.app-dark-theme .mat-mdc-icon-button.copy-btn,
+body.app-dark-theme .mat-mdc-table vb-button.table-icon-btn .mat-mdc-icon-button {
   color: var(--eco-text-muted) !important;
 }
 
 body.app-dark-theme .mat-mdc-icon-button.mat-unthemed:hover,
-body.app-dark-theme .mat-mdc-icon-button.copy-btn:hover {
+body.app-dark-theme .mat-mdc-icon-button.copy-btn:hover,
+body.app-dark-theme .mat-mdc-table vb-button.table-icon-btn:hover .mat-mdc-icon-button {
   color: var(--eco-accent) !important;
 }
 
@@ -791,6 +816,46 @@ table.mat-mdc-table {
 .mat-mdc-header-row,
 .mat-mdc-row {
   min-height: 48px;
+}
+
+/* Shared mat-table cell content: never flex the <td> itself — use inner wrappers */
+.mat-mdc-table .table-cell-inline {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.mat-mdc-table .table-cell-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.1rem;
+}
+
+.mat-mdc-table vb-button.table-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  line-height: 0;
+  vertical-align: middle;
+  height: 28px;
+  align-self: center;
+}
+
+.mat-mdc-table vb-button.table-icon-btn .mat-mdc-icon-button {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  min-height: 28px;
+  padding: 0;
+  --mdc-icon-button-state-layer-size: 28px;
+}
+
+.mat-mdc-table vb-button.table-icon-btn .vb-button__icon--icon-button {
+  font-size: 18px;
+  line-height: 1;
 }
 
 .mat-mdc-table thead .mat-mdc-header-cell {

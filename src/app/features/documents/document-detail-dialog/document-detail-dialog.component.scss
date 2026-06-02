@@ -1,16 +1,24 @@
-.detail-content {
-  max-height: 70vh;
-  overflow-y: auto;
+:host {
+  display: contents;
+}
+
+:host ::ng-deep .document-detail-popup .vb-popup__panel {
+  width: min(100%, 35rem);
+  max-height: min(92vh, 48rem);
 }
 
 .detail-section {
   margin-bottom: 1rem;
 
+  &:last-child {
+    margin-bottom: 0;
+  }
+
   h3 {
     margin: 0 0 0.35rem;
     font-size: 0.875rem;
     font-weight: 500;
-    color: var(--mat-sys-on-surface-variant, #666);
+    color: var(--vb-color-text-muted, var(--eco-text-muted));
   }
 }
 
@@ -21,13 +29,13 @@
   display: block;
   margin: 0;
   padding: 0.75rem;
-  border-radius: 4px;
+  border-radius: var(--vb-radius-input, 8px);
   font-size: 0.8125rem;
   word-break: break-word;
   white-space: pre-wrap;
-  background-color: var(--mat-sys-surface-container-high);
-  color: var(--mat-sys-on-surface);
-  border: 1px solid var(--mat-sys-outline-variant);
+  background: var(--vb-color-surface-input, var(--eco-surface-muted));
+  color: var(--vb-color-text-primary, var(--eco-text));
+  border: 1px solid var(--vb-color-border-default, var(--eco-border));
 }
 
 .document-block {

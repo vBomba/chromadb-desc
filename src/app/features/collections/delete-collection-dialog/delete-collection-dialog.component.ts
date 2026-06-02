@@ -1,7 +1,7 @@
 import { Component, inject, input, output, signal } from '@angular/core';
 import { VbButtonComponent } from 'vbomba-ui';
 import { ChromaApiService, ChromaCollection } from '../../../core/services/chroma-api.service';
-import { MatSnackBar } from '@angular/material/snack-bar';
+import { AppToastService } from '../../../core/services/app-toast.service';
 
 @Component({
   selector: 'app-delete-collection-form',
@@ -12,7 +12,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 })
 export class DeleteCollectionDialogComponent {
   private chroma = inject(ChromaApiService);
-  private snackBar = inject(MatSnackBar);
+  private toast = inject(AppToastService);
 
   readonly collection = input.required<ChromaCollection>();
   readonly deleted = output<void>();
@@ -30,14 +30,14 @@ export class DeleteCollectionDialogComponent {
     this.deleting.set(true);
     this.chroma.deleteCollection(c.id).subscribe({
       next: () => {
-        this.snackBar.open('Collection deleted', 'Close', { duration: 3000 });
+        this.toast.success('Collection deleted', 3000);
         this.deleting.set(false);
         this.deleted.emit();
       },
       error: (err) => {
         this.deleting.set(false);
         const msg = err?.error?.message ?? err?.message ?? 'Failed to delete collection';
-        this.snackBar.open(String(msg), 'Close', { duration: 5000 });
+        this.toast.error(String(msg));
       },
     });
   }

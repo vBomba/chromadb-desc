@@ -1,5 +1,11 @@
-<h2 mat-dialog-title>Embedding map — {{ data.title }}</h2>
-<mat-dialog-content class="map-content">
+<vb-popup
+  class="embedding-map-popup"
+  [(open)]="open"
+  title="Embedding map"
+  [subtitle]="title()"
+  close-aria-label="Close embedding map"
+  (closed)="onPopupClosed()"
+>
   @if (!hasEmbeddings) {
     <p>No embeddings available for the selected points.</p>
   } @else {
@@ -62,7 +68,12 @@
       </div>
     }
   }
-</mat-dialog-content>
-<mat-dialog-actions align="end">
-  <vb-button variant="filled" label="Close" iconClass="bx bx-check" (click)="close()" />
-</mat-dialog-actions>
+
+  <div vbPopupActions>
+    <vb-button variant="filled" label="Close" iconClass="bx bx-check" (click)="close()" />
+  </div>
+</vb-popup>
+
+@if (detailRow(); as row) {
+  <app-document-detail-dialog [(open)]="detailOpen" [row]="row" />
+}

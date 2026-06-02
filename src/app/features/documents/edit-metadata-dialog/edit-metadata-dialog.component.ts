@@ -3,7 +3,7 @@ import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/materia
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { VbButtonComponent, VbTextareaComponent } from 'vbomba-ui';
 import { ChromaApiService } from '../../../core/services/chroma-api.service';
-import { MatSnackBar } from '@angular/material/snack-bar';
+import { AppToastService } from '../../../core/services/app-toast.service';
 import { DocumentRow } from '../document-row.model';
 
 const DEFAULT_DIMENSION = 384;
@@ -24,7 +24,7 @@ export interface EditMetadataDialogData {
 export class EditMetadataDialogComponent {
   private dialogRef = inject(MatDialogRef<EditMetadataDialogComponent>);
   private chroma = inject(ChromaApiService);
-  private snackBar = inject(MatSnackBar);
+  private toast = inject(AppToastService);
   protected data = inject<EditMetadataDialogData>(MAT_DIALOG_DATA);
 
   protected metadataControl = new FormControl<string>(
@@ -57,7 +57,7 @@ export class EditMetadataDialogComponent {
       const raw = this.metadataControl.value.trim();
       meta = raw ? (JSON.parse(raw) as Record<string, unknown>) : null;
     } catch {
-      this.snackBar.open('Invalid JSON in metadata', 'Close', { duration: 3000 });
+      this.toast.error('Invalid JSON in metadata', 3000);
       return;
     }
     const dim = this.data.dimension ?? DEFAULT_DIMENSION;
@@ -73,13 +73,13 @@ export class EditMetadataDialogComponent {
       })
       .subscribe({
         next: () => {
-          this.snackBar.open('Metadata updated', 'Close', { duration: 3000 });
+          this.toast.success('Metadata updated', 3000);
           this.dialogRef.close(true);
         },
         error: (err) => {
           this.submitting = false;
           const msg = err?.error?.message ?? err?.message ?? 'Failed to update metadata';
-          this.snackBar.open(String(msg), 'Close', { duration: 5000 });
+          this.toast.error(String(msg));
         },
       });
   }

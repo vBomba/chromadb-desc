@@ -1,105 +1,150 @@
-<div class="vb-panel">
-  <header class="vb-panel__head doc-header">
-    <div class="vb-panel__titles">
-      <h2 class="vb-panel__title">{{ collectionName() || 'Documents' }}</h2>
-      <p class="vb-panel__subtitle">Collection ID: {{ collectionId() }}</p>
-    </div>
-    <div class="header-actions">
-      <vb-button
-        variant="icon"
-        iconClass="bx bx-arrow-back"
-        type="button"
-        routerLink="/collections"
-        ariaLabel="Back to collections"
-      />
-      <vb-button
-        variant="icon"
-        iconClass="bx bx-scatter-chart"
-        type="button"
-        (click)="openEmbeddingMap()"
-        [disabled]="!hasEmbeddingsForMap()"
-        ariaLabel="Show embedding map"
-      />
-      <vb-button
-        variant="icon"
-        iconClass="bx bx-plus"
-        color="primary"
-        type="button"
-        (click)="openAddDialog()"
-        ariaLabel="Add document"
-      />
-    </div>
-  </header>
-  <div class="vb-panel__body">
-    <div class="search-bar">
-      <vb-input
-        class="search-field"
-        [value]="searchQuery()"
-        (valueChange)="searchQuery.set($event)"
-        (keydown.enter)="runSearch()"
-        placeholder="Find semantically similar documents"
-        aria-label="Semantic search query"
-      />
-      <vb-button variant="filled" label="Search vectors" iconClass="bx bx-search" (click)="runSearch()" />
-      @if (searchMode() === 'search') {
-        <vb-button variant="text" label="Clear" iconClass="bx bx-x" (click)="clearSearch()" />
-      }
-    </div>
-    @if (searchMode() === 'search' && searchQuery().trim()) {
-      <div class="active-chips" aria-label="Active semantic search">
-        <vb-chip
-          [label]="'Semantic: ' + searchQuery().trim()"
-          removable
-          removeAriaLabel="Clear semantic search"
-          (remove)="clearSearch()"
-        />
+<div class="documents-page">
+  <vb-card
+    class="documents-card"
+    [tabs]="documentsViewTabs"
+    [(tabValue)]="documentsViewTab"
+    aria-label="Document view mode"
+    (tabValueChange)="onDocumentsViewTabChange($event)"
+  >
+    <header class="documents-card__head doc-header">
+      <div class="documents-card__titles">
+        <h2 class="documents-card__title">{{ collectionName() || 'Documents' }}</h2>
+        <p class="documents-card__subtitle">Collection ID: {{ collectionId() }}</p>
       </div>
-    }
-    @if (searchMode() === 'list') {
-      <div class="text-filter-bar">
-        <vb-input
-          class="text-filter-field"
-          [value]="textFilterDraft()"
-          (valueChange)="textFilterDraft.set($event)"
-          (keydown.enter)="applyTextFilter()"
-          placeholder="Substring in ID, document, metadata, embedding preview…"
-          aria-label="Filter documents by substring"
+      <div class="header-actions">
+        <vb-button
+          variant="icon"
+          iconClass="bx bx-arrow-back"
+          type="button"
+          routerLink="/collections"
+          ariaLabel="Back to collections"
         />
         <vb-button
-          variant="filled"
+          variant="icon"
+          iconClass="bx bx-scatter-chart"
           type="button"
-          label="Apply text filter"
-          iconClass="bx bx-filter-alt"
-          (click)="applyTextFilter()"
+          (click)="openEmbeddingMap()"
+          [disabled]="!hasEmbeddingsForMap()"
+          ariaLabel="Show embedding map"
         />
-        @if (appliedTextFilter().trim()) {
-          <vb-button variant="text" type="button" label="Clear filter" iconClass="bx bx-x" (click)="clearTextFilter()" />
-        }
+        <vb-button
+          variant="icon"
+          iconClass="bx bx-plus"
+          color="primary"
+          type="button"
+          (click)="openAddDialog()"
+          ariaLabel="Add document"
+        />
       </div>
-      @if (appliedTextFilter().trim()) {
-        <div class="active-chips" aria-label="Active text filters">
-          <vb-chip
-            [label]="'Text: ' + appliedTextFilter().trim()"
-            removable
-            removeAriaLabel="Clear text filter"
-            (remove)="clearTextFilter()"
+    </header>
+
+    @switch (documentsViewTab()) {
+      @case ('semantic') {
+        <div class="search-bar">
+          <vb-input
+            class="search-field"
+            [value]="searchQuery()"
+            (valueChange)="searchQuery.set($event)"
+            (keydown.enter)="runSearch()"
+            placeholder="Find semantically similar documents"
+            aria-label="Semantic search query"
           />
+          <vb-button variant="filled" label="Search vectors" iconClass="bx bx-search" (click)="runSearch()" />
+          @if (searchMode() === 'search') {
+            <vb-button variant="text" label="Clear" iconClass="bx bx-x" (click)="clearSearch()" />
+          }
         </div>
+        @if (searchMode() === 'search' && searchQuery().trim()) {
+          <div class="active-chips" aria-label="Active semantic search">
+            <vb-chip
+              [label]="'Semantic: ' + searchQuery().trim()"
+              removable
+              removeAriaLabel="Clear semantic search"
+              (remove)="clearSearch()"
+            />
+          </div>
+        }
+        <vb-alert class="documents-view-alert" tone="info" title="Vector search">
+          Sends a similarity query to Chroma. REST API v2 requires embeddings — when text query is
+          unsupported, the app uses the embedding of the best-matching document as a proxy.
+        </vb-alert>
       }
-      <div class="filter-help">
-        Semantic search sends your query to Chroma vector endpoint. Text filter applies substring matching on all fields
-        in this UI, with server prefilter by document text when supported.
-      </div>
+      @case ('filter') {
+        <div class="text-filter-bar">
+          <vb-input
+            class="text-filter-field"
+            [value]="textFilterDraft()"
+            (valueChange)="textFilterDraft.set($event)"
+            (keydown.enter)="applyTextFilter()"
+            placeholder="Substring in ID, document, metadata, embedding preview…"
+            aria-label="Filter documents by substring"
+          />
+          <vb-button
+            variant="filled"
+            type="button"
+            label="Apply text filter"
+            iconClass="bx bx-filter-alt"
+            (click)="applyTextFilter()"
+          />
+          @if (appliedTextFilter().trim()) {
+            <vb-button variant="text" type="button" label="Clear filter" iconClass="bx bx-x" (click)="clearTextFilter()" />
+          }
+        </div>
+        @if (appliedTextFilter().trim()) {
+          <div class="active-chips" aria-label="Active text filters">
+            <vb-chip
+              [label]="'Text: ' + appliedTextFilter().trim()"
+              removable
+              removeAriaLabel="Clear text filter"
+              (remove)="clearTextFilter()"
+            />
+          </div>
+        }
+        <vb-alert class="documents-view-alert" tone="info" title="Text filter">
+          Substring match on ID, document, metadata, and embedding preview. Uses server
+          <code>where_document.$contains</code> when supported, then validates locally.
+        </vb-alert>
+      }
+      @default {
+        <vb-alert class="documents-view-alert" tone="neutral" title="Browse">
+          Paginated list of all documents in this collection (25 per page).
+        </vb-alert>
+      }
     }
+
     @if (loading()) {
       <div class="loading">
         <vb-loader [size]="32" aria-label="Loading documents" />
         <span>Loading…</span>
       </div>
+    } @else if (showEmptyState()) {
+      <vb-empty-state
+        [title]="emptyStateTitle()"
+        [description]="emptyStateDescription()"
+        iconClass="bx bx-file"
+      >
+        <div vbEmptyActions>
+          @if (documentsViewTab() === 'semantic' || documentsViewTab() === 'filter') {
+            <vb-button variant="text" label="Back to browse" iconClass="bx bx-list-ul" (click)="documentsViewTab.set('browse'); onDocumentsViewTabChange('browse')" />
+          } @else {
+            <vb-button variant="filled" label="Add document" iconClass="bx bx-plus" (click)="openAddDialog()" />
+          }
+        </div>
+      </vb-empty-state>
     } @else {
+      <div class="bulk-actions">
+        <vb-button
+          variant="outlined"
+          color="warn"
+          label="Delete selected"
+          iconClass="bx bx-trash"
+          (click)="bulkDelete()"
+          [disabled]="!selection.selected.length"
+        />
+      </div>
       <table mat-table [dataSource]="dataSource" class="documents-table">
         <ng-container matColumnDef="select">
-          <th mat-header-cell *matHeaderCellDef>
+          <th mat-header-cell *matHeaderCellDef class="select-cell">
             <vb-checkbox
               [checked]="isAllSelected()"
               (checkedChange)="toggleAllFromCheckbox($event)"
@@ -107,7 +152,7 @@
               aria-label="Select all"
             />
           </th>
-          <td mat-cell *matCellDef="let row">
+          <td mat-cell *matCellDef="let row" class="select-cell">
             <vb-checkbox
               [checked]="selection.isSelected(row)"
               (checkedChange)="toggleRowChecked(row, $event)"
@@ -117,25 +162,27 @@
         </ng-container>
         <ng-container matColumnDef="id">
           <th mat-header-cell *matHeaderCellDef>ID</th>
-          <td mat-cell *matCellDef="let row" class="id-cell-wrapper">
-            @if (showTextFilterHighlight()) {
-              <code
-                class="id-cell copyable"
+          <td mat-cell *matCellDef="let row" class="id-cell">
+            <div class="table-cell-inline id-cell-wrapper">
+              @if (showTextFilterHighlight()) {
+                <code
+                  class="id-clip id-cell copyable"
+                  (click)="copyId(row.id, $event)"
+                  title="Copy ID"
+                  [innerHTML]="cellHtml(row.id, 0)"
+                ></code>
+              } @else {
+                <code class="id-clip id-cell copyable" (click)="copyId(row.id, $event)" title="Copy ID">{{ row.id }}</code>
+              }
+              <vb-button
+                variant="icon"
+                iconClass="bx bx-copy"
+                type="button"
                 (click)="copyId(row.id, $event)"
-                title="Copy ID"
-                [innerHTML]="cellHtml(row.id, 0)"
-              ></code>
-            } @else {
-              <code class="id-cell copyable" (click)="copyId(row.id, $event)" title="Copy ID">{{ row.id }}</code>
-            }
-            <vb-button
-              variant="icon"
-              iconClass="bx bx-copy"
-              type="button"
-              (click)="copyId(row.id, $event)"
-              ariaLabel="Copy ID"
-              class="copy-btn"
-            />
+                ariaLabel="Copy ID"
+                class="table-icon-btn copy-btn"
+              />
+            </div>
           </td>
         </ng-container>
         <ng-container matColumnDef="document">
@@ -158,72 +205,54 @@
             }
           </td>
         </ng-container>
-        <ng-container matColumnDef="embedding">
-          <th mat-header-cell *matHeaderCellDef>Embedding</th>
-          <td mat-cell *matCellDef="let row">
-            @if (showTextFilterHighlight()) {
-              <span [innerHTML]="cellHtml(row.embeddingPreview ?? '—', 0)"></span>
-            } @else {
-              {{ row.embeddingPreview || '—' }}
-            }
-          </td>
-        </ng-container>
         <ng-container matColumnDef="actions">
           <th mat-header-cell *matHeaderCellDef>Actions</th>
-          <td mat-cell *matCellDef="let row" (click)="$event.stopPropagation()">
-            <vb-button
-              variant="icon"
-              iconClass="bx bx-edit"
-              type="button"
-              (click)="openEditMetadataDialog(row)"
-              ariaLabel="Edit metadata"
-            />
-            <vb-button
-              variant="icon"
-              iconClass="bx bx-trash"
-              color="warn"
-              type="button"
-              (click)="openDeleteDialog(row)"
-              ariaLabel="Delete"
-            />
+          <td mat-cell *matCellDef="let row" class="actions-cell" (click)="$event.stopPropagation()">
+            <div class="table-cell-actions">
+              <vb-button
+                variant="icon"
+                iconClass="bx bx-edit"
+                type="button"
+                class="table-icon-btn"
+                (click)="openEditMetadataDialog(row)"
+                ariaLabel="Edit metadata"
+              />
+              <vb-button
+                variant="icon"
+                iconClass="bx bx-trash"
+                color="warn"
+                type="button"
+                class="table-icon-btn"
+                (click)="openDeleteDialog(row)"
+                ariaLabel="Delete"
+              />
+            </div>
           </td>
         </ng-container>
         <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
         <tr mat-row *matRowDef="let row; columns: displayedColumns" (click)="openDetailDialog(row)" class="clickable-row"></tr>
-        <tr class="mat-row" *matNoDataRow>
-          <td class="mat-cell" [attr.colspan]="displayedColumns.length">
-            @if (searchMode() === 'search') {
-              No results.
-            } @else if (appliedTextFilter().trim()) {
-              No documents match this filter.
-            } @else {
-              No documents.
-            }
-          </td>
-        </tr>
       </table>
-      <div class="bulk-actions">
-        <vb-button
-          variant="outlined"
-          color="warn"
-          label="Delete selected"
-          iconClass="bx bx-trash"
-          (click)="bulkDelete()"
-          [disabled]="!selection.selected.length"
+      @if (documentsViewTab() === 'browse' || (documentsViewTab() === 'filter' && hasTextFilter())) {
+        <vb-paginator
+          class="documents-paginator"
+          [page]="pageIndex() + 1"
+          (pageChange)="onPaginatorPage($event)"
+          [totalItems]="paginatorLength()"
+          [pageSize]="pageSize"
+          aria-label="Documents pagination"
         />
-      </div>
-      @if (searchMode() === 'list') {
-        <div class="paginator-bar">
-          <vb-paginator
-            class="paginator-main"
-            [page]="pageIndex() + 1"
-            (pageChange)="onPaginatorPage($event)"
-            [totalItems]="paginatorLength()"
-            [pageSize]="pageSize"
-            aria-label="Documents pagination"
-          />
-        </div>
       }
     }
-  </div>
+  </vb-card>
 </div>
+
+<app-embedding-map-dialog
+  [(open)]="embeddingMapOpen"
+  [rows]="dataSource.data"
+  [title]="collectionName() || 'Documents'"
+  [collectionId]="collectionId() ?? ''"
+/>
+
+@if (detailRow(); as row) {
+  <app-document-detail-dialog [(open)]="detailOpen" [row]="row" />
+}

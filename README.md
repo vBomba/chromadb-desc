@@ -14,12 +14,14 @@ Edit `public/config.json` (or the same file in your build output):
 
 ```json
 {
-  "apiBaseUrl": "https://your-chroma-api/api/v2",
+  "apiBaseUrl": "/api/v2",
   "tenant": "your-tenant-uuid",
   "database": "your_database",
   "apiKey": null
 }
 ```
+
+For local dev with `ng serve`, use **`/api/v2`** (relative URL) so requests go through `proxy.conf.js` to `http://localhost:8000`. Direct `http://localhost:8000/api/v2` is blocked by browser CORS. For production builds against a remote Chroma host, use the full URL including `/api/v2`.
 
 - **apiBaseUrl** – Base URL including `/api/v2` (no trailing slash).
 - **tenant** – Tenant UUID.

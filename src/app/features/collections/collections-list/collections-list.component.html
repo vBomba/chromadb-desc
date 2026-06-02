@@ -44,6 +44,16 @@
         <vb-loader [size]="32" aria-label="Loading collections" />
         <span>Loading…</span>
       </div>
+    } @else if (!dataSource.data.length) {
+      <vb-empty-state
+        title="No collections found"
+        description="Create a collection or adjust the filters above."
+        iconClass="bx bx-folder-open"
+      >
+        <div vbEmptyActions>
+          <vb-button variant="filled" label="Create collection" iconClass="bx bx-plus" (click)="openCreatePopup()" />
+        </div>
+      </vb-empty-state>
     } @else {
       <table mat-table [dataSource]="dataSource" matSort class="collections-table">
         <ng-container matColumnDef="name">
@@ -51,16 +61,19 @@
           <td mat-cell *matCellDef="let row">{{ row.name }}</td>
         </ng-container>
         <ng-container matColumnDef="id">
-          <th mat-header-cell *matHeaderCellDef mat-sort-header>ID</th>
-          <td mat-cell *matCellDef="let row" class="id-cell-wrapper">
-            <code class="id-clip">{{ row.id }}</code>
-            <vb-button
-              variant="icon"
-              iconClass="bx bx-copy"
-              type="button"
-              ariaLabel="Copy ID"
-              (click)="copyId(row.id, $event)"
-            />
+          <th mat-header-cell *matHeaderCellDef>ID</th>
+          <td mat-cell *matCellDef="let row" class="id-cell">
+            <div class="table-cell-inline id-cell-wrapper">
+              <code class="id-clip">{{ row.id }}</code>
+              <vb-button
+                variant="icon"
+                iconClass="bx bx-copy"
+                type="button"
+                ariaLabel="Copy ID"
+                class="table-icon-btn copy-btn"
+                (click)="copyId(row.id, $event)"
+              />
+            </div>
           </td>
         </ng-container>
         <ng-container matColumnDef="dimension">
@@ -89,29 +102,30 @@
         </ng-container>
         <ng-container matColumnDef="actions">
           <th mat-header-cell *matHeaderCellDef>Actions</th>
-          <td mat-cell *matCellDef="let row">
-            <vb-button
-              variant="icon"
-              iconClass="bx bx-link-external"
-              type="button"
-              ariaLabel="Open collection"
-              (click)="openCollection(row)"
-            />
-            <vb-button
-              variant="icon"
-              iconClass="bx bx-trash"
-              color="warn"
-              type="button"
-              ariaLabel="Delete collection"
-              (click)="openDeletePopup(row)"
-            />
+          <td mat-cell *matCellDef="let row" class="actions-cell">
+            <div class="table-cell-actions">
+              <vb-button
+                variant="icon"
+                iconClass="bx bx-link-external"
+                type="button"
+                class="table-icon-btn"
+                ariaLabel="Open collection"
+                (click)="openCollection(row)"
+              />
+              <vb-button
+                variant="icon"
+                iconClass="bx bx-trash"
+                color="warn"
+                type="button"
+                class="table-icon-btn"
+                ariaLabel="Delete collection"
+                (click)="openDeletePopup(row)"
+              />
+            </div>
           </td>
         </ng-container>
         <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
         <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
-        <tr class="mat-row" *matNoDataRow>
-          <td class="mat-cell" [attr.colspan]="displayedColumns.length">No collections found.</td>
-        </tr>
       </table>
     }
   </div>

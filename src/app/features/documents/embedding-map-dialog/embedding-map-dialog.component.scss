@@ -1,5 +1,10 @@
-.map-content {
-  max-width: 720px;
+:host {
+  display: contents;
+}
+
+:host ::ng-deep .embedding-map-popup .vb-popup__panel {
+  width: min(100%, 45rem);
+  max-height: min(92vh, 52rem);
 }
 
 .toolbar {

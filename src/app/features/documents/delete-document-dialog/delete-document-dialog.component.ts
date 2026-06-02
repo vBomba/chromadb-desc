@@ -2,7 +2,7 @@ import { Component, inject } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { VbButtonComponent } from 'vbomba-ui';
 import { ChromaApiService } from '../../../core/services/chroma-api.service';
-import { MatSnackBar } from '@angular/material/snack-bar';
+import { AppToastService } from '../../../core/services/app-toast.service';
 import { DocumentRow } from '../document-row.model';
 
 export interface DeleteDocumentDialogData {
@@ -20,7 +20,7 @@ export interface DeleteDocumentDialogData {
 export class DeleteDocumentDialogComponent {
   private dialogRef = inject(MatDialogRef<DeleteDocumentDialogComponent>);
   private chroma = inject(ChromaApiService);
-  private snackBar = inject(MatSnackBar);
+  private toast = inject(AppToastService);
   protected data = inject<DeleteDocumentDialogData>(MAT_DIALOG_DATA);
 
   protected deleting = false;
@@ -38,13 +38,13 @@ export class DeleteDocumentDialogComponent {
     this.deleting = true;
     this.chroma.deleteRecords(this.data.collectionId, { ids: [this.row.id] }).subscribe({
       next: () => {
-        this.snackBar.open('Document deleted', 'Close', { duration: 3000 });
+        this.toast.success('Document deleted', 3000);
         this.dialogRef.close(true);
       },
       error: (err) => {
         this.deleting = false;
         const msg = err?.error?.message ?? err?.message ?? 'Failed to delete document';
-        this.snackBar.open(String(msg), 'Close', { duration: 5000 });
+        this.toast.error(String(msg));
       },
     });
   }

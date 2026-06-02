@@ -12,16 +12,17 @@ import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { MatTableModule, MatTableDataSource } from '@angular/material/table';
 import { MatSortModule, MatSort } from '@angular/material/sort';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import {
   VbButtonComponent,
   VbChipComponent,
   VbConnectionIndicatorComponent,
+  VbEmptyStateComponent,
   VbInputComponent,
   VbLoaderComponent,
   VbPopupComponent,
 } from 'vbomba-ui';
 import { ChromaApiService, ChromaCollection } from '../../../core/services/chroma-api.service';
+import { AppToastService } from '../../../core/services/app-toast.service';
 import { ErrorLogService } from '../../../core/services/error-log.service';
 import { CreateCollectionDialogComponent } from '../create-collection-dialog/create-collection-dialog.component';
 import { DeleteCollectionDialogComponent } from '../delete-collection-dialog/delete-collection-dialog.component';
@@ -32,11 +33,11 @@ import { DeleteCollectionDialogComponent } from '../delete-collection-dialog/del
   imports: [
     FormsModule,
     MatTableModule,
-    MatSnackBarModule,
     MatSortModule,
     VbButtonComponent,
     VbChipComponent,
     VbConnectionIndicatorComponent,
+    VbEmptyStateComponent,
     VbInputComponent,
     VbLoaderComponent,
     VbPopupComponent,
@@ -49,7 +50,7 @@ import { DeleteCollectionDialogComponent } from '../delete-collection-dialog/del
 export class CollectionsListComponent implements OnInit, AfterViewInit {
   private chroma = inject(ChromaApiService);
   private router = inject(Router);
-  private snackBar = inject(MatSnackBar);
+  private toast = inject(AppToastService);
   private errorLog = inject(ErrorLogService);
   private cdr = inject(ChangeDetectorRef);
 
@@ -139,7 +140,7 @@ export class CollectionsListComponent implements OnInit, AfterViewInit {
         this.loading.set(false);
         const { message, detail, hint } = ErrorLogService.messageFromError(err);
         this.errorLog.push(`Collections: ${message}`, detail, hint);
-        this.snackBar.open('Failed to load collections', 'Close', { duration: 5000 });
+        this.toast.error('Failed to load collections');
       },
     });
   }
@@ -194,7 +195,7 @@ export class CollectionsListComponent implements OnInit, AfterViewInit {
             this.loading.set(false);
             const { message, detail, hint } = ErrorLogService.messageFromError(err);
             this.errorLog.push(`CRN: ${message}`, detail, hint ?? 'Перевірте tenant:database:collection.');
-            this.snackBar.open('Collection not found (CRN)', 'Close', { duration: 4000 });
+            this.toast.warn('Collection not found (CRN)', 4000);
           },
         });
         return;
@@ -248,8 +249,8 @@ export class CollectionsListComponent implements OnInit, AfterViewInit {
   protected copyId(id: string, event?: Event): void {
     if (event) (event as Event).stopPropagation();
     navigator.clipboard.writeText(id).then(
-      () => this.snackBar.open('ID copied', 'Close', { duration: 2000 }),
-      () => this.snackBar.open('Copy failed', 'Close', { duration: 3000 })
+      () => this.toast.success('ID copied', 2000),
+      () => this.toast.error('Copy failed', 3000)
     );
   }
 }

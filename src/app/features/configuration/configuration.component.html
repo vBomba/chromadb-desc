@@ -24,9 +24,9 @@
             id="cfg-api-base"
             [value]="form.controls.apiBaseUrl.value"
             (valueChange)="patchControl(form.controls.apiBaseUrl, $event)"
-            placeholder="https://example.com/api/v2"
+            placeholder="/api/v2"
           />
-          <p class="field-hint">Include /api/v2, no trailing slash</p>
+          <p class="field-hint">Include /api/v2, no trailing slash. Use <code>/api/v2</code> with <code>ng serve</code> proxy.</p>
           @if (form.controls.apiBaseUrl.hasError('required') && form.controls.apiBaseUrl.touched) {
             <p class="vb-field-error">Required</p>
           }
@@ -66,13 +66,20 @@
           />
           <p class="field-hint">Sent as x-chroma-token header when set</p>
         </div>
+        <vb-alert tone="info" title="Local development">
+          For <code>ng serve</code>, set API base URL to <code>/api/v2</code> so requests go through
+          <code>proxy.conf.js</code> and avoid browser CORS blocks.
+        </vb-alert>
         <div class="field-block">
-          <label class="vb-field-label" for="cfg-heartbeat">Heartbeat interval (ms)</label>
-          <vb-input
-            id="cfg-heartbeat"
-            type="text"
-            [value]="heartbeatDisplay()"
+          <vb-slider
+            [value]="form.controls.heartbeatIntervalMs.value"
             (valueChange)="patchHeartbeat($event)"
+            [min]="5000"
+            [max]="300000"
+            label="Heartbeat interval (ms)"
+            [showValue]="true"
+            [valueInput]="true"
+            value-input-aria-label="Heartbeat interval in milliseconds"
           />
           <p class="field-hint">5000–300000 (default 30000)</p>
           @if (form.controls.heartbeatIntervalMs.hasError('min') || form.controls.heartbeatIntervalMs.hasError('max')) {

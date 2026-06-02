@@ -2,7 +2,7 @@ import { Component, inject, output, signal } from '@angular/core';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { VbButtonComponent, VbInputComponent } from 'vbomba-ui';
 import { ChromaApiService } from '../../../core/services/chroma-api.service';
-import { MatSnackBar } from '@angular/material/snack-bar';
+import { AppToastService } from '../../../core/services/app-toast.service';
 
 @Component({
   selector: 'app-create-collection-form',
@@ -13,7 +13,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 })
 export class CreateCollectionDialogComponent {
   private chroma = inject(ChromaApiService);
-  private snackBar = inject(MatSnackBar);
+  private toast = inject(AppToastService);
 
   readonly created = output<void>();
   readonly cancelled = output<void>();
@@ -41,14 +41,14 @@ export class CreateCollectionDialogComponent {
     this.submitting.set(true);
     this.chroma.createCollection({ name }).subscribe({
       next: () => {
-        this.snackBar.open('Collection created', 'Close', { duration: 3000 });
+        this.toast.success('Collection created', 3000);
         this.reset();
         this.created.emit();
       },
       error: (err) => {
         this.submitting.set(false);
         const msg = err?.error?.message ?? err?.message ?? 'Failed to create collection';
-        this.snackBar.open(String(msg), 'Close', { duration: 5000 });
+        this.toast.error(String(msg));
       },
     });
   }

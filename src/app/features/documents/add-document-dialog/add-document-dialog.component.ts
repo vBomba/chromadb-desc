@@ -3,7 +3,7 @@ import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/materia
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { VbButtonComponent, VbInputComponent, VbTextareaComponent } from 'vbomba-ui';
 import { ChromaApiService } from '../../../core/services/chroma-api.service';
-import { MatSnackBar } from '@angular/material/snack-bar';
+import { AppToastService } from '../../../core/services/app-toast.service';
 
 const DEFAULT_DIMENSION = 384;
 
@@ -28,7 +28,7 @@ export interface AddDocumentDialogData {
 export class AddDocumentDialogComponent {
   private dialogRef = inject(MatDialogRef<AddDocumentDialogComponent>);
   private chroma = inject(ChromaApiService);
-  private snackBar = inject(MatSnackBar);
+  private toast = inject(AppToastService);
   protected data = inject<AddDocumentDialogData>(MAT_DIALOG_DATA);
 
   protected idControl = new FormControl<string>('', {
@@ -56,7 +56,7 @@ export class AddDocumentDialogComponent {
       const raw = this.metadataControl.value.trim();
       metadatas = [raw ? (JSON.parse(raw) as Record<string, unknown>) : null];
     } catch {
-      this.snackBar.open('Invalid JSON in metadata', 'Close', { duration: 3000 });
+      this.toast.error('Invalid JSON in metadata', 3000);
       return;
     }
     const dim = this.dimension;
@@ -71,13 +71,13 @@ export class AddDocumentDialogComponent {
       })
       .subscribe({
         next: () => {
-          this.snackBar.open('Document added', 'Close', { duration: 3000 });
+          this.toast.success('Document added', 3000);
           this.dialogRef.close(true);
         },
         error: (err) => {
           this.submitting = false;
           const msg = err?.error?.message ?? err?.message ?? 'Failed to add document';
-          this.snackBar.open(String(msg), 'Close', { duration: 5000 });
+          this.toast.error(String(msg));
         },
       });
   }

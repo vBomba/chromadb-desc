@@ -1,8 +1,39 @@
-mat-card-header {
+.documents-page {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.documents-card {
+  display: block;
+  width: 100%;
+}
+
+.documents-card__head {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 0.75rem;
+  margin-bottom: 0.85rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid var(--vb-color-border-default, var(--eco-border));
+}
+
+.documents-card__titles {
+  flex: 1;
+  min-width: 0;
+}
+
+.documents-card__title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 600;
+}
+
+.documents-card__subtitle {
+  margin: 0.25rem 0 0;
+  color: var(--vb-color-text-muted, var(--eco-text-muted));
+  font-size: 0.88rem;
+  line-height: 1.4;
 }
 
 .header-actions {
@@ -66,6 +97,11 @@ mat-card-header {
   margin: -0.25rem 0 0.85rem;
 }
 
+.documents-view-alert {
+  display: block;
+  margin-bottom: 0.85rem;
+}
+
 .filter-help {
   margin-top: -0.55rem;
   margin-bottom: 0.85rem;
@@ -88,21 +124,24 @@ mat-card-header {
   padding: 1rem 0;
 }
 
+.bulk-actions {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
 .documents-table {
   width: 100%;
   table-layout: fixed;
 
-  .mat-header-row,
-  .mat-row {
+  .mat-mdc-header-row,
+  .mat-mdc-row {
     height: 52px;
   }
 
-  .mat-header-cell,
-  .mat-cell {
-    padding-top: 0.45rem;
-    padding-bottom: 0.45rem;
-    padding-left: 0.5rem;
-    padding-right: 0.5rem;
+  .mat-mdc-header-cell,
+  .mat-mdc-cell {
+    padding: 0.45rem 0.5rem;
     vertical-align: middle;
     line-height: 1.3;
     box-sizing: border-box;
@@ -115,42 +154,20 @@ mat-card-header {
     cursor: pointer;
   }
 
-  /* Block + inline alignment: avoids row height “jump” vs flex inside fixed-height mat-row */
-  .id-cell-wrapper {
-    width: 100%;
-    box-sizing: border-box;
-    line-height: inherit;
+  .id-clip {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: inherit;
+    line-height: 1.3;
+  }
 
-    .id-cell.copyable,
-    .id-cell {
-      display: inline;
-      vertical-align: middle;
-      cursor: pointer;
-      font-size: inherit;
-      line-height: inherit;
-      word-break: break-all;
-      margin: 0;
-      padding: 0;
-      &:hover { opacity: 0.85; }
-    }
-
-    .copy-btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      vertical-align: middle;
-      margin-inline-start: 0.25rem;
-      --mdc-icon-button-state-layer-size: 28px;
-      width: 28px;
-      height: 28px;
-      padding: 2px;
-    }
-
-    .copy-btn .mat-icon {
-      font-size: 16px;
-      width: 16px;
-      height: 16px;
-      line-height: 16px;
+  .id-cell.copyable {
+    cursor: pointer;
+    &:hover {
+      opacity: 0.85;
     }
   }
 
@@ -158,11 +175,32 @@ mat-card-header {
     font-size: 0.9em;
     max-width: 200px;
   }
+
+  .select-cell {
+    overflow: visible;
+    text-align: center;
+    padding-inline: 0.35rem;
+  }
 }
 
 :host ::ng-deep .documents-table .mat-column-select {
-  width: 38px;
-  max-width: 38px;
+  width: 48px;
+  min-width: 48px;
+  max-width: 48px;
+}
+
+:host ::ng-deep .documents-table .mat-column-select vb-checkbox {
+  display: inline-flex;
+  justify-content: center;
+  vertical-align: middle;
+}
+
+:host ::ng-deep .documents-table .mat-column-select .vb-checkbox {
+  gap: 0;
+}
+
+:host ::ng-deep .documents-table .mat-column-select .vb-checkbox__label:empty {
+  display: none;
 }
 
 :host ::ng-deep .documents-table .mat-column-id {
@@ -182,50 +220,13 @@ mat-card-header {
   max-width: 92px;
 }
 
-/* One toolbar row: paginator + page jump, same height as paginator */
-.paginator-bar {
-  display: flex;
-  align-items: stretch;
+.documents-paginator {
+  display: block;
+  width: 100%;
+  margin-top: 0.75rem;
+}
+
+:host ::ng-deep .documents-paginator .vb-paginator {
   width: 100%;
   box-sizing: border-box;
-  border-top: 1px solid var(--eco-border);
-  background: var(--eco-surface);
-}
-
-:host ::ng-deep .paginator-bar .mat-mdc-paginator {
-  border-top: none;
-  background: transparent !important;
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-.page-jump {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  flex: 0 0 auto;
-  padding: 0 0.65rem 0 0.25rem;
-  align-self: center;
-}
-
-.page-jump-label {
-  font-size: 0.8rem;
-  font-weight: 500;
-  color: var(--eco-text-muted);
-  white-space: nowrap;
-}
-
-/* Uses global eco input tokens; only width + tight horizontal padding */
-.page-jump-input {
-  width: 3rem;
-  min-width: 0;
-  text-align: center;
-  padding-inline: 0.3rem;
-}
-
-.page-total {
-  min-width: 2.75rem;
-  font-size: 0.85rem;
-  color: var(--eco-text-muted);
-  white-space: nowrap;
 }
