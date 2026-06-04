@@ -1,6 +1,13 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { VbAlertComponent, VbButtonComponent, VbChipComponent, VbInputComponent, VbSliderComponent } from 'vbomba-ui';
+import {
+  VbAlertComponent,
+  VbButtonComponent,
+  VbChipComponent,
+  VbInputComponent,
+  VbLoaderComponent,
+  VbSliderComponent,
+} from 'vbomba-ui';
 import { ConfigService } from '../../core/services/config.service';
 import { AppToastService } from '../../core/services/app-toast.service';
 import { ConnectionHeartbeatService } from '../../core/services/connection-heartbeat.service';
@@ -14,6 +21,7 @@ import { ConnectionHeartbeatService } from '../../core/services/connection-heart
     VbInputComponent,
     VbButtonComponent,
     VbChipComponent,
+    VbLoaderComponent,
     VbSliderComponent,
   ],
   templateUrl: './configuration.component.html',

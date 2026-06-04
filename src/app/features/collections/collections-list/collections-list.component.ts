@@ -59,7 +59,7 @@ export class CollectionsListComponent implements OnInit, AfterViewInit {
 
   protected loading = signal(true);
   protected dataSource = new MatTableDataSource<ChromaCollection>([]);
-  protected readonly displayedColumns = ['tenant', 'database', 'collection', 'id', 'dimension', 'count', 'actions'];
+  protected readonly displayedColumns = ['name', 'id', 'dimension', 'count', 'actions'];
 
   protected filterTenant = '';
   protected filterDatabase = '';

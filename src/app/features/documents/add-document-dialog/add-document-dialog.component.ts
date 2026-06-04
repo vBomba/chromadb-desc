@@ -43,6 +43,10 @@ export class AddDocumentDialogComponent {
     return this.data.dimension ?? DEFAULT_DIMENSION;
   }
 
+  protected get hasUnknownDimension(): boolean {
+    return this.data.dimension == null;
+  }
+
   protected cancel(): void {
     this.dialogRef.close(false);
   }
