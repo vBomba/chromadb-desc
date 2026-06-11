@@ -204,7 +204,7 @@ export class CollectionsListComponent implements OnInit, AfterViewInit {
             this.dataSource.data = [];
             this.loading.set(false);
             const { message, detail, hint } = ErrorLogService.messageFromError(err);
-            this.errorLog.push(`CRN: ${message}`, detail, hint ?? 'Перевірте tenant:database:collection.');
+            this.errorLog.push(`CRN: ${message}`, detail, hint ?? 'Check tenant:database:collection.');
             this.toast.warn('Collection not found (CRN)', 4000);
           },
         });

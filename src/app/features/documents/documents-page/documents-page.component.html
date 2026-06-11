@@ -3,6 +3,7 @@
     class="documents-card"
     [tabs]="documentsViewTabs"
     [(tabValue)]="documentsViewTab"
+    [tabBodyMaxHeight]="documentsCardBodyMaxHeight"
     aria-label="Document view mode"
     (tabValueChange)="onDocumentsViewTabChange($event)"
   >
@@ -71,12 +72,19 @@
       }
       @case ('filter') {
         <div class="text-filter-bar">
+          <vb-select
+            class="text-filter-scope"
+            [value]="textFilterScope()"
+            (valueChange)="onTextFilterScopeChange($event)"
+            [options]="textFilterScopeOptions"
+            aria-label="Text filter scope"
+          />
           <vb-input
             class="text-filter-field"
             [value]="textFilterDraft()"
             (valueChange)="textFilterDraft.set($event)"
             (keydown.enter)="applyTextFilter()"
-            placeholder="Substring in ID, document, metadata, embedding preview…"
+            [placeholder]="textFilterScope() === 'id' ? 'Substring in document ID…' : 'Substring in ID, document, metadata, embedding preview…'"
             aria-label="Filter documents by substring"
           />
           <vb-button
@@ -93,7 +101,7 @@
         @if (appliedTextFilter().trim()) {
           <div class="active-chips" aria-label="Active text filters">
             <vb-chip
-              [label]="'Text: ' + appliedTextFilter().trim()"
+              [label]="textFilterChipLabel()"
               removable
               removeAriaLabel="Clear text filter"
               (remove)="clearTextFilter()"
@@ -101,8 +109,12 @@
           </div>
         }
         <vb-alert class="documents-view-alert" tone="info" title="Text filter">
-          Substring match on ID, document, metadata, and embedding preview. Uses server
-          <code>where_document.$contains</code> when supported, then validates locally.
+          @if (textFilterScope() === 'id') {
+            Substring match on document ID only. Scans the collection without server prefilter.
+          } @else {
+            Substring match on ID, document, metadata, and embedding preview. Uses server
+            <code>where_document.$contains</code> when supported, then validates locally.
+          }
         </vb-alert>
       }
       @default {

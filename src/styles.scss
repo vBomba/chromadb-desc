@@ -203,6 +203,12 @@ body {
   overflow-x: auto;
 }
 
+/* vb-card sticky tabs: opaque bar when content scrolls underneath */
+.vb-card__stack--tabbed .vb-card__tabs--sticky {
+  background: var(--vb-color-surface-default, var(--eco-surface)) !important;
+  box-shadow: 0 1px 0 var(--eco-border);
+}
+
 .vb-panel__head {
   display: flex;
   align-items: flex-start;

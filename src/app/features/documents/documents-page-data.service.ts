@@ -7,6 +7,7 @@ import {
   TEXT_FILTER_BATCH,
   TEXT_FILTER_MAX_SCAN,
   documentRowMatchesNeedle,
+  type TextFilterScope,
 } from './document-text-filter.util';
 
 export interface SemanticSearchResult {
@@ -142,14 +143,17 @@ export class DocumentsPageDataService {
   scanForTextFilter(
     collectionId: string,
     needleRaw: string,
-    needleLower: string
+    needleLower: string,
+    scope: TextFilterScope = 'all'
   ): Observable<TextFilterScanResult> {
     return new Observable<TextFilterScanResult>((subscriber: Subscriber<TextFilterScanResult>) => {
       const matches: DocumentRow[] = [];
       let offset = 0;
       let cancelled = false;
       let innerSub: Subscription | undefined;
-      let useServerDocumentPrefilter = true;
+      // ID-only scope must scan every record: the server prefilter matches document
+      // content and would drop rows whose ID matches but document does not.
+      let useServerDocumentPrefilter = scope === 'all';
       let retriedWithoutServerPrefilter = false;
 
       const finish = (truncated: boolean) => {
@@ -183,7 +187,7 @@ export class DocumentsPageDataService {
               if (cancelled) return;
               const rows = mapGetRecordsResponseToRows(res);
               for (const row of rows) {
-                if (documentRowMatchesNeedle(row, needleLower)) matches.push(row);
+                if (documentRowMatchesNeedle(row, needleLower, scope)) matches.push(row);
               }
               offset += rows.length;
               const fullBatch = rows.length === limit;

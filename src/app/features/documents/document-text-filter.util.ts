@@ -16,6 +16,16 @@ export function documentRowHaystack(row: DocumentRow): string {
   return parts.join('\u0001').toLowerCase();
 }
 
-export function documentRowMatchesNeedle(row: DocumentRow, needleLower: string): boolean {
+/** Which fields the text filter matches against. */
+export type TextFilterScope = 'all' | 'id';
+
+export function documentRowMatchesNeedle(
+  row: DocumentRow,
+  needleLower: string,
+  scope: TextFilterScope = 'all'
+): boolean {
+  if (scope === 'id') {
+    return row.id.toLowerCase().includes(needleLower);
+  }
   return documentRowHaystack(row).includes(needleLower);
 }

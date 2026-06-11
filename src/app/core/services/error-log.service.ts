@@ -49,18 +49,18 @@ export class ErrorLogService {
     const message = 'Request failed';
     let hint: string | null = null;
     if (e?.status === 401) {
-      hint = 'Перевірте API key (Configuration → API key).';
+      hint = 'Check API key (Configuration → API key).';
     } else if (e?.status === 404) {
-      hint = 'Перевірте tenant та database в Configuration.';
+      hint = 'Check tenant and database in Configuration.';
     } else if (e?.status === 0 || (typeof detail === 'string' && detail.toLowerCase().includes('fetch'))) {
-      hint = 'ChromaDB недоступний. Запустіть сервер (docker compose up) або перевірте apiBaseUrl у Configuration.';
+      hint = 'ChromaDB is unavailable. Start the server (docker compose up) or check apiBaseUrl in Configuration.';
     } else if (
       e?.status === 422 &&
       typeof detail === 'string' &&
       detail.toLowerCase().includes('query_embeddings')
     ) {
       hint =
-        'Chroma REST API v2 не приймає query_texts — потрібні query_embeddings. Переконайтесь, що в колекції є embeddings.';
+        'Chroma REST API v2 does not accept query_texts — query_embeddings required. Ensure the collection has embeddings.';
     }
     return { message, detail: String(detail), hint };
   }

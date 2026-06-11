@@ -14,6 +14,8 @@ import {
   VbInputComponent,
   VbLoaderComponent,
   VbPaginatorComponent,
+  VbSelectComponent,
+  type VbSelectOption,
   type VbTabItem,
 } from 'vbomba-ui';
 import { ChromaApiService } from '../../../core/services/chroma-api.service';
@@ -28,7 +30,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { DocumentRow } from '../document-row.model';
 import { SelectionModel } from '@angular/cdk/collections';
 import { DocumentsPageDataService } from '../documents-page-data.service';
-import { TEXT_FILTER_MAX_SCAN, metadataStringForMatch } from '../document-text-filter.util';
+import { TEXT_FILTER_MAX_SCAN, metadataStringForMatch, type TextFilterScope } from '../document-text-filter.util';
 import { escapeHtml, highlightHtml } from '../document-highlight.util';
 
 const PAGE_SIZE = 25;
@@ -48,6 +50,7 @@ const PAGE_SIZE = 25;
     VbInputComponent,
     VbLoaderComponent,
     VbPaginatorComponent,
+    VbSelectComponent,
     VbCardComponent,
     EmbeddingMapDialogComponent,
     DocumentDetailDialogComponent,
@@ -90,10 +93,21 @@ export class DocumentsPageComponent implements OnInit {
   protected searchMode = signal<'list' | 'search'>('list');
   protected textFilterDraft = signal('');
   protected appliedTextFilter = signal('');
+  protected textFilterScope = signal<TextFilterScope>('all');
+  /** Scope the currently applied filter was run with (chip label + rescan). */
+  private appliedTextFilterScope: TextFilterScope = 'all';
+
+  protected readonly textFilterScopeOptions: VbSelectOption[] = [
+    { value: 'all', label: 'All fields' },
+    { value: 'id', label: 'ID only' },
+  ];
   protected documentsViewTab = model<'browse' | 'semantic' | 'filter'>('browse');
   protected embeddingMapOpen = model(false);
   protected detailOpen = model(false);
   protected detailRow = signal<DocumentRow | null>(null);
+
+  /** Scroll card body under sticky tabs (Browse / Vector search / Text filter). */
+  protected readonly documentsCardBodyMaxHeight = 'min(36rem, calc(100dvh - 11rem))';
 
   protected readonly documentsViewTabs: VbTabItem[] = [
     { value: 'browse', label: 'Browse', iconClass: 'bx bx-list-ul' },
@@ -186,10 +200,24 @@ export class DocumentsPageComponent implements OnInit {
     return this.searchMode() === 'list' && this.hasTextFilter();
   }
 
+  protected onTextFilterScopeChange(scope: string): void {
+    if (scope !== 'all' && scope !== 'id') return;
+    this.textFilterScope.set(scope);
+    if (this.hasTextFilter()) {
+      this.applyTextFilter();
+    }
+  }
+
+  protected textFilterChipLabel(): string {
+    const prefix = this.appliedTextFilterScope === 'id' ? 'ID' : 'Text';
+    return `${prefix}: ${this.appliedTextFilter().trim()}`;
+  }
+
   protected applyTextFilter(): void {
     this.documentsViewTab.set('filter');
     const q = this.textFilterDraft().trim();
     this.appliedTextFilter.set(q);
+    this.appliedTextFilterScope = this.textFilterScope();
     if (!q) {
       this.filteredRowsCache = [];
       this.pageIndex.set(0);
@@ -264,7 +292,7 @@ export class DocumentsPageComponent implements OnInit {
     this.loading.set(true);
     this.textScanSub?.unsubscribe();
     this.textScanSub = this.docsData
-      .scanForTextFilter(cid, needle, needleLower)
+      .scanForTextFilter(cid, needle, needleLower, this.appliedTextFilterScope)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: ({ matches, truncated }) => {
@@ -311,7 +339,7 @@ export class DocumentsPageComponent implements OnInit {
           this.dataSource.data = rows;
           this.loading.set(false);
           if (usedEmbeddingProxy) {
-            this.toast.info('REST API не підтримує query_texts — використано embedding найближчого документа.');
+            this.toast.info('REST API does not support query_texts — used embedding of the closest matching document.');
           }
         },
         error: (err) => {
